@@ -175,7 +175,12 @@ export function DeckForm({ templates }: { templates: Template[] }) {
   async function handleSample() {
     setError("");
     try {
-      await downloadPptx(SAMPLE_DECK);
+      // 入力済みのタイトル・サブタイトルがあれば表紙のサンプル文に使う（空欄はダミーの文のまま）
+      await downloadPptx({
+        ...SAMPLE_DECK,
+        title: title.trim() || SAMPLE_DECK.title,
+        subtitle: subtitle.trim() || SAMPLE_DECK.subtitle,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -359,7 +364,7 @@ export function DeckForm({ templates }: { templates: Template[] }) {
 
       {sections.length > 0 && (
         <p className={`text-sm ${tooManySlides ? "text-red-600" : "text-[var(--muted)]"}`}>
-          本文スライド {slideCount}枚（上限 {MAX_CONTENT_SLIDES}枚。1枚ごとに Web 検索します）
+          本文スライド {slideCount}枚（上限 {MAX_CONTENT_SLIDES}枚）
         </p>
       )}
       {!canSubmit && !loading && !tooManySlides && (

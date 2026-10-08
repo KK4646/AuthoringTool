@@ -15,6 +15,7 @@ describe("buildPptx", () => {
     const deck: Deck = {
       title: "テスト",
       subtitle: "",
+      sources: [],
       sections: [
         { heading: "A", bullets: ["a"], sources: [source(1)] },
         { heading: "B", bullets: ["b"], sources: [] },
@@ -29,6 +30,7 @@ describe("buildPptx", () => {
     const deck: Deck = {
       title: "テスト",
       subtitle: "サブ",
+      sources: [],
       sections: [
         { heading: "A", bullets: ["a"], sources: many.slice(0, 10) },
         { heading: "B", bullets: ["b"], sources: many.slice(5) }, // 5件は重複
@@ -38,10 +40,23 @@ describe("buildPptx", () => {
     expect(slideCount(await buildPptx(deck))).toBe(2 + 2 + 2);
   });
 
+  it("全体の出典と、古い履歴の中項目ごとの出典を合わせて出典スライドに載せる", async () => {
+    const many = Array.from({ length: 15 }, (_, i) => source(i));
+    const deck: Deck = {
+      title: "テスト",
+      subtitle: "",
+      sources: many.slice(0, 10),
+      sections: [{ heading: "A", bullets: ["a"], sources: many.slice(5) }], // 5件は重複
+    };
+    // 表紙1 + 目次1 + 本文1 + 出典（15件 → 12件/枚なので2枚）
+    expect(slideCount(await buildPptx(deck))).toBe(5);
+  });
+
   it("小項目のある中項目は、区切り1枚と小項目ごとの本文を作り、小項目の出典も集める", async () => {
     const deck: Deck = {
       title: "テスト",
       subtitle: "",
+      sources: [],
       sections: [
         { heading: "A", bullets: ["a"], sources: [] },
         {
@@ -66,6 +81,7 @@ describe("buildPptx", () => {
     const deck: Deck = {
       title: "テスト",
       subtitle: "",
+      sources: [],
       sections: [{ heading: "A", bullets: ["a"], sources: [] }],
     };
     const bytes = Buffer.from(png.split(",")[1], "base64");
@@ -79,6 +95,7 @@ describe("buildPptx", () => {
     const deck: Deck = {
       title: "テスト",
       subtitle: "",
+      sources: [],
       sections: [{ heading: "A", bullets: ["a"], sources: [] }],
     };
     expect(slideCount(await buildPptx(deck))).toBe(3);

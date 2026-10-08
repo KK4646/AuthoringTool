@@ -3,15 +3,16 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { BetaMessageParam } from "@anthropic-ai/sdk/resources/beta/messages/messages";
 import { z } from "zod";
 import { loadLayout } from "@/lib/slides/layout";
-import type { Deck, Outline, ResearchRequest, Section, Source, Subsection } from "@/lib/slides/types";
+import type { Deck, Outline, ResearchRequest, Section, Source } from "@/lib/slides/types";
 
 // API 料金を抑えるため、調べる部分は Sonnet、箇条書きに整える部分は Haiku を使う（2026-10-08）
 const RESEARCH_MODEL = "claude-sonnet-5-5";
 const BULLETS_MODEL = "claude-haiku-5-5";
 // 安全判定で断られた場合に、サーバー側で別モデルへ自動で切り替える設定（Haiku には無い）
 const FALLBACK_BETA = "server-side-fallback-2026-07-01";
-// 1つの中項目で Web 検索する上限回数（1回ごとに課金され、結果も入力トークンになる）
-const MAX_SEARCHES = 2;
+// リサーチ全体で Web 検索する上限回数（1回ごとに課金され、結果も入力トークンになる）。
+// 2026-10-08 にスライドごとの並行リサーチ（1枚2回まで）をやめ、全体で1回の依頼にまとめた
+const MAX_SEARCHES = 5;
 // 検索が長引いて一時停止（pause_turn）したときに再開する上限回数
 const MAX_CONTINUATIONS = 3;
 
@@ -22,20 +23,42 @@ function createAnthropic() {
   return new Anthropic({ apiKey });
 }
 
-// 本文スライド1枚分の話題（例: 中項目「A」、中項目「A」の小項目「B」）についてWeb検索し、メモと出典を返す
-async function researchTopic(
+// 本文スライド1枚分の話題。topic は AI への説明用、heading はスライドの見出し
+export type SlideTopic = { topic: string; heading: string };
+
+// 中項目・小項目の一覧を、本文スライドの並び順の話題の一覧にする。
+// 小項目があれば小項目ごとに1枚（中項目そのものは調べない）、無ければ中項目1枚
+export function listSlideTopics(outlines: Outline[]): SlideTopic[] {
+  return outlines.flatMap(({ heading, subheadings }) =>
+    subheadings.length === 0
+      ? [{ topic: `中項目「${heading}」`, heading }]
+      : subheadings.map((sub) => ({ topic: `中項目「${heading}」の小項目「${sub}」`, heading: sub })),
+  );
+}
+
+// AI に渡す話題の一覧（番号付き）
+function numberedTopics(topics: SlideTopic[]): string {
+  return topics.map((t, i) => `${i + 1}. ${t.topic}`).join("\n");
+}
+
+// 全スライド分の話題を1回の依頼でまとめてWeb検索し、スライドごとに区切ったメモと出典を返す
+async function researchAll(
   title: string,
-  topic: string,
+  topics: SlideTopic[],
 ): Promise<{ notes: string; sources: Source[] }> {
   const client = createAnthropic();
   const messages: BetaMessageParam[] = [
     {
       role: "user",
-      content: `プレゼン資料「${title}」の${topic}について、Web検索で調べてください。
-スライドに載せるための要点を日本語でまとめてください。
+      content: `プレゼン資料「${title}」の本文スライドに載せる内容を、Web検索で調べてください。
+本文スライドは次の${topics.length}枚です。
+
+${numberedTopics(topics)}
+
+- Web検索は${MAX_SEARCHES}回までです。複数のスライドに使える情報源をまとめて探してください
+- スライドごとに「【スライド番号】」の見出しを付け、要点を日本語の箇条書き（5項目程度まで）でまとめる
 - 具体的な事実・数値・年を優先し、信頼できる情報源（公的機関・論文・大手報道など）を使う
-- 情報が古い可能性があるものは時点を明記する
-- 箇条書きで、5項目程度まで`,
+- 情報が古い可能性があるものは時点を明記する`,
     },
   ];
 
@@ -59,7 +82,7 @@ async function researchTopic(
   }
 
   if (response.stop_reason === "refusal") {
-    throw new Error(`${topic}のリサーチがAIに断られました。表現を変えて試してください。`);
+    throw new Error("リサーチがAIに断られました。表現を変えて試してください。");
   }
 
   // 本文と、本文が引用した出典URLを集める（重複は除く）
@@ -78,14 +101,16 @@ async function researchTopic(
   return { notes, sources: [...sources.values()] };
 }
 
-// リサーチのメモを、スライド用の短い箇条書きに整える
+// リサーチのメモを、全スライド分の短い箇条書きに1回の依頼で整える。戻り値は topics と同じ並び
 async function toBullets(
   title: string,
-  topic: string,
+  topics: SlideTopic[],
   notes: string,
-): Promise<string[]> {
+): Promise<string[][]> {
   const { maxBullets, maxCharsPerBullet } = loadLayout().content;
-  const schema = z.object({ bullets: z.array(z.string()) });
+  const schema = z.object({
+    slides: z.array(z.object({ number: z.number().int(), bullets: z.array(z.string()) })),
+  });
   const client = createAnthropic();
 
   const response = await client.beta.messages.parse({
@@ -95,9 +120,13 @@ async function toBullets(
     messages: [
       {
         role: "user",
-        content: `プレゼン資料「${title}」の${topic}のスライド本文を作ります。
-次のリサーチメモをもとに、箇条書きを作ってください。
-- ${maxBullets}項目以内
+        content: `プレゼン資料「${title}」の本文スライド${topics.length}枚の本文を作ります。
+
+${numberedTopics(topics)}
+
+次のリサーチメモをもとに、スライドごとに箇条書きを作ってください。number はスライド番号です。
+- 全${topics.length}枚すべてについて作る
+- 1枚あたり${maxBullets}項目以内
 - 1項目あたり全角${maxCharsPerBullet}文字以内（スライドの枠に収めるため厳守）
 - 体言止めなどで簡潔に。メモにない情報は加えない
 
@@ -109,34 +138,42 @@ ${notes}
   });
 
   if (response.stop_reason === "refusal" || !response.parsed_output) {
-    throw new Error(`${topic}の箇条書きを作れませんでした。もう一度試してください。`);
+    throw new Error("箇条書きを作れませんでした。もう一度試してください。");
   }
-  return response.parsed_output.bullets.slice(0, maxBullets);
+  const byNumber = new Map(response.parsed_output.slides.map((s) => [s.number, s.bullets]));
+  return topics.map((t, i) => {
+    const bullets = byNumber.get(i + 1);
+    if (!bullets) throw new Error(`${t.topic}の箇条書きを作れませんでした。もう一度試してください。`);
+    return bullets.slice(0, maxBullets);
+  });
 }
 
-// 本文スライド1枚分を作る（調べる → 箇条書きに整える）
-async function buildSlide(title: string, topic: string, heading: string): Promise<Subsection> {
-  const { notes, sources } = await researchTopic(title, topic);
-  const bullets = await toBullets(title, topic, notes);
-  return { heading, bullets, sources };
+// 本文スライドごとの箇条書き（listSlideTopics と同じ並び）を、中項目・小項目の形に戻す
+export function assembleSections(outlines: Outline[], bulletsList: string[][]): Section[] {
+  let i = 0;
+  return outlines.map(({ heading, subheadings }) => {
+    if (subheadings.length === 0) {
+      return { heading, bullets: bulletsList[i++], sources: [] };
+    }
+    const subsections = subheadings.map((sub) => ({
+      heading: sub,
+      bullets: bulletsList[i++],
+      sources: [],
+    }));
+    return { heading, bullets: [], sources: [], subsections };
+  });
 }
 
-// 中項目1つ分を作る。小項目があれば小項目ごとに調べ、中項目そのものは調べない
-async function buildSection(title: string, outline: Outline): Promise<Section> {
-  const { heading, subheadings } = outline;
-  if (subheadings.length === 0) {
-    return buildSlide(title, `中項目「${heading}」`, heading);
-  }
-  const subsections = await Promise.all(
-    subheadings.map((sub) => buildSlide(title, `中項目「${heading}」の小項目「${sub}」`, sub)),
-  );
-  return { heading, bullets: [], sources: [], subsections };
-}
-
-// 中項目（小項目）ごとのリサーチを並行して実行し、スライド全体の内容を作る
+// 全スライド分を1回で調べ、1回で箇条書きに整えて、スライド全体の内容を作る。
+// 出典はスライドごとに分けず、全体で1つの一覧にする
 export async function researchDeck(req: ResearchRequest): Promise<Deck> {
-  const sections = await Promise.all(
-    req.sections.map((s) => buildSection(req.title, s)),
-  );
-  return { title: req.title, subtitle: req.subtitle, sections };
+  const topics = listSlideTopics(req.sections);
+  const { notes, sources } = await researchAll(req.title, topics);
+  const bulletsList = await toBullets(req.title, topics, notes);
+  return {
+    title: req.title,
+    subtitle: req.subtitle,
+    sections: assembleSections(req.sections, bulletsList),
+    sources,
+  };
 }

@@ -4,7 +4,10 @@ import {
   MAX_CONTENT_SLIDES,
   MAX_SECTIONS,
   MAX_SUBSECTIONS,
+  allSources,
+  DeckSchema,
   parseSections,
+  parseSources,
   ResearchRequestSchema,
 } from "./types";
 
@@ -77,5 +80,42 @@ describe("parseSections", () => {
   it("形が崩れていたら空にする", () => {
     expect(parseSections([{ heading: 1 }])).toEqual([]);
     expect(parseSections(null)).toEqual([]);
+  });
+});
+
+describe("parseSources", () => {
+  it("出典の配列はそのまま読み、形が崩れていたら空にする", () => {
+    const sources = [{ title: "t", url: "https://example.com" }];
+    expect(parseSources(sources)).toEqual(sources);
+    expect(parseSources([{ title: "t" }])).toEqual([]);
+    expect(parseSources(null)).toEqual([]);
+  });
+});
+
+describe("allSources", () => {
+  const src = (i: number) => ({ title: `出典${i}`, url: `https://example.com/${i}` });
+
+  it("全体の出典を先に、古い履歴の中項目・小項目の出典を後に並べ、URL の重複を除く", () => {
+    const deck = DeckSchema.parse({
+      title: "t",
+      subtitle: "",
+      sources: [src(1), src(2)],
+      sections: [
+        { heading: "A", bullets: [], sources: [src(2), src(3)] },
+        {
+          heading: "B",
+          bullets: [],
+          sources: [],
+          subsections: [{ heading: "B1", bullets: [], sources: [src(4), src(1)] }],
+        },
+      ],
+    });
+    expect(allSources(deck)).toEqual([src(1), src(2), src(3), src(4)]);
+  });
+
+  it("sources の無い古い形も読める", () => {
+    const deck = DeckSchema.parse({ title: "t", subtitle: "", sections: [] });
+    expect(deck.sources).toEqual([]);
+    expect(allSources(deck)).toEqual([]);
   });
 });

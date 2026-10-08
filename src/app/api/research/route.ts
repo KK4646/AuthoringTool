@@ -30,7 +30,12 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("decks")
-    .insert({ title: deck.title, subtitle: deck.subtitle, sections: deck.sections })
+    .insert({
+      title: deck.title,
+      subtitle: deck.subtitle,
+      sections: deck.sections,
+      sources: deck.sources,
+    })
     .select("id")
     .single();
   if (error) {

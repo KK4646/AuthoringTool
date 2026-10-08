@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import PptxGenJS from "pptxgenjs";
 import { loadLayout, type TextBox } from "@/lib/slides/layout";
-import type { Deck } from "@/lib/slides/types";
+import { allSources, type Deck } from "@/lib/slides/types";
 import type { BackgroundSlot } from "@/lib/slides/backgrounds";
 
 type Slide = ReturnType<PptxGenJS["addSlide"]>;
@@ -94,11 +94,7 @@ export async function buildPptx(
 
   // 出典（多いときは複数枚に分ける）
   const s = layout.sources;
-  const allSources = deck.sections.flatMap((sec) => [
-    ...sec.sources,
-    ...(sec.subsections ?? []).flatMap((sub) => sub.sources),
-  ]);
-  const unique = [...new Map(allSources.map((src) => [src.url, src])).values()];
+  const unique = allSources(deck);
   for (let i = 0; i < unique.length; i += s.maxPerSlide) {
     const page = unique.slice(i, i + s.maxPerSlide);
     const slide = pptx.addSlide();

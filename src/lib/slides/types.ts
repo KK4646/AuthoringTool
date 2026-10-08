@@ -23,11 +23,13 @@ export const SectionSchema = z.object({
   subsections: z.array(SubsectionSchema).optional(),
 });
 
-// スライド全体
+// スライド全体。出典はスライドごとに分けず、全体で1つの一覧として持つ（2026-10-08 から）。
+// それより前の履歴は中項目・小項目の sources に出典を持つので、読むときは allSources で合わせる
 export const DeckSchema = z.object({
   title: z.string(),
   subtitle: z.string(),
   sections: z.array(SectionSchema),
+  sources: z.array(SourceSchema).default([]),
 });
 
 export type Source = z.infer<typeof SourceSchema>;
@@ -38,7 +40,7 @@ export type Deck = z.infer<typeof DeckSchema>;
 // 中項目の最大数・1つの中項目の小項目の最大数（画面とサーバーで共通）
 export const MAX_SECTIONS = 10;
 export const MAX_SUBSECTIONS = 5;
-// 本文スライドの合計の上限。1枚ごとに Web 検索するので、API 料金と時間を抑えるため
+// 本文スライドの合計の上限。リサーチのメモと箇条書きの量を抑え、API 料金と時間を抑えるため
 export const MAX_CONTENT_SLIDES = 20;
 
 // 中項目と小項目の見出しだけの形（作成画面の入力・テンプレート）
@@ -93,4 +95,23 @@ export type ResearchRequest = z.infer<typeof ResearchRequestSchema>;
 export function parseSections(value: unknown): Section[] {
   const parsed = z.array(SectionSchema).safeParse(value);
   return parsed.success ? parsed.data : [];
+}
+
+// DB の sources (jsonb) を検証して読む。形が崩れていたら空にする
+export function parseSources(value: unknown): Source[] {
+  const parsed = z.array(SourceSchema).safeParse(value);
+  return parsed.success ? parsed.data : [];
+}
+
+// 出典スライド・詳細画面に載せる出典の一覧。全体の出典に、古い履歴の中項目・小項目ごとの出典を
+// 足し、URL の重複を除く
+export function allSources(deck: Deck): Source[] {
+  const list = [
+    ...deck.sources,
+    ...deck.sections.flatMap((sec) => [
+      ...sec.sources,
+      ...(sec.subsections ?? []).flatMap((sub) => sub.sources),
+    ]),
+  ];
+  return [...new Map(list.map((src) => [src.url, src])).values()];
 }

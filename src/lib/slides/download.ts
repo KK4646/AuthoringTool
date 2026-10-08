@@ -31,7 +31,7 @@ export const SAMPLE_DECK: Deck = {
         "4項目目の箇条書き",
         "5項目目の箇条書き。最大5項目まで表示されます。",
       ],
-      sources: [{ title: "出典サイトのタイトル", url: "https://example.com/article" }],
+      sources: [],
     },
     {
       // 小項目のある中項目（区切りのスライド＋小項目ごとの本文）の配置確認用
@@ -47,4 +47,5 @@ export const SAMPLE_DECK: Deck = {
       ],
     },
   ],
+  sources: [{ title: "出典サイトのタイトル", url: "https://example.com/article" }],
 };

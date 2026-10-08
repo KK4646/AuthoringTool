@@ -3,7 +3,7 @@ DB（共有Supabase）のルールは ../db-schemas/CLAUDE.md を参照。
 
 # slide-app
 
-テーマ（1枚目のタイトル）と中項目を入れると、中項目ごとに Claude API で Web 検索して要点をまとめ、
+テーマ（1枚目のタイトル）と中項目を入れると、Claude API で1回の依頼にまとめて Web 検索して要点をまとめ、
 あらかじめ用意した背景画像の上に文字を配置した .pptx を作る。作ったスライド案は履歴に残る。
 設計は `DESIGN.md` が正典。
 
@@ -23,6 +23,8 @@ DB（共有Supabase）のルールは ../db-schemas/CLAUDE.md を参照。
 - 中項目ごとの中身（見出し・箇条書き・出典、任意で小項目 `subsections`）は `decks.sections` (jsonb) に持つ。
   中項目単位で検索・集計しないため列に分けない。読むときは `parseSections()` で形を確かめる。
   `subsections` は後から足した項目なので、無い履歴は小項目なしとして扱う
+- 出典は `decks.sources` (jsonb) に全体で1つの一覧として持つ（0106 から）。古い履歴は `sections` の中に
+  出典があるので、出典を出すときは必ず `allSources()` を通す
 - 中項目・小項目の数の上限と本文スライドの合計上限は `src/lib/slides/types.ts` の `MAX_*`（画面とサーバーで共通）
 - 背景画像は設定画面でアップロードしたもの（Storage の `slideapp-backgrounds`、キーは `<user_id>/title` と
   `<user_id>/content`）を優先し、無ければ既定の `public/backgrounds/` を使う。表には持たない

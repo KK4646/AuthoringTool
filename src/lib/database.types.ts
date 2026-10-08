@@ -19,6 +19,7 @@ export type Database = {
           title: string;
           subtitle: string;
           sections: Json;
+          sources: Json;
           created_at: string;
           updated_at: string;
         };
@@ -28,6 +29,7 @@ export type Database = {
           title: string;
           subtitle?: string;
           sections?: Json;
+          sources?: Json;
           created_at?: string;
           updated_at?: string;
         };
@@ -37,6 +39,7 @@ export type Database = {
           title?: string;
           subtitle?: string;
           sections?: Json;
+          sources?: Json;
           created_at?: string;
           updated_at?: string;
         };
