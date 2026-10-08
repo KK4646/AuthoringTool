@@ -2,16 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { DownloadButton } from "@/components/DownloadButton";
+import { DeckSlides } from "@/components/DeckSlides";
 import { jstDateString } from "@/lib/date";
-import {
-  allSources,
-  parseSections,
-  parseSources,
-  SLIDE_LAYOUT_LABELS,
-  type Deck,
-  type Subsection,
-} from "@/lib/slides/types";
+import { allSources, parseSections, parseSources, type Deck } from "@/lib/slides/types";
 
 export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
   const { id } = await params;
@@ -44,28 +37,7 @@ export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
         <p className="text-xs text-[var(--muted)]">{jstDateString(row.created_at)} 作成</p>
       </header>
 
-      <DownloadButton deck={deck} />
-
-      <div className="flex flex-col gap-3">
-        {deck.sections.map((s, i) => (
-          <article
-            key={i}
-            className="flex flex-col gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4 shadow-[var(--shadow-card)]"
-          >
-            <h2 className="font-semibold">{s.heading}</h2>
-            {s.subsections && s.subsections.length > 0 ? (
-              s.subsections.map((sub, j) => (
-                <div key={j} className="flex flex-col gap-2 border-l-2 border-[var(--border)] pl-3">
-                  <h3 className="text-sm font-semibold">{sub.heading}</h3>
-                  <SlideBody slide={sub} />
-                </div>
-              ))
-            ) : (
-              <SlideBody slide={s} />
-            )}
-          </article>
-        ))}
-      </div>
+      <DeckSlides id={id} initialDeck={deck} />
 
       {sources.length > 0 && (
         <details className="text-xs text-[var(--muted)]">
@@ -82,52 +54,5 @@ export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
         </details>
       )}
     </main>
-  );
-}
-
-// 本文スライド1枚分（置き方の名前と、置き方ごとの中身）。出典は画面の最後にまとめて出す
-function SlideBody({ slide }: { slide: Subsection }) {
-  const layout = slide.layout ?? "content";
-  const twoColumns = layout === "two-content" || layout === "comparison";
-  return (
-    <div className="flex flex-col gap-2 text-sm">
-      <span className="w-fit rounded-full border border-[var(--border)] px-2 py-0.5 text-xs text-[var(--muted)]">
-        {SLIDE_LAYOUT_LABELS[layout]}
-      </span>
-      {layout === "content-with-caption" && slide.caption && <p>{slide.caption}</p>}
-      {twoColumns ? (
-        <div className="grid grid-cols-2 gap-3">
-          <Bullets label={layout === "comparison" ? slide.leftLabel : undefined} items={slide.bullets} />
-          <Bullets label={layout === "comparison" ? slide.rightLabel : undefined} items={slide.right ?? []} />
-        </div>
-      ) : (
-        <Bullets items={slide.bullets} />
-      )}
-      {layout === "code" && slide.code && (
-        <pre className="overflow-x-auto rounded-lg border border-[var(--border)] p-3 font-mono text-xs">
-          {slide.code}
-        </pre>
-      )}
-      {layout === "bubbles" &&
-        (slide.bubbles ?? []).map((text, j) => (
-          <p key={j} className="w-fit rounded-2xl border border-[var(--border)] px-3 py-1">
-            {text}
-          </p>
-        ))}
-    </div>
-  );
-}
-
-// 箇条書き（比較のときは小見出し付き）
-function Bullets({ label, items }: { label?: string; items: string[] }) {
-  return (
-    <div className="flex flex-col gap-1">
-      {label && <p className="font-semibold">{label}</p>}
-      <ul className="list-disc space-y-1 pl-5">
-        {items.map((b, j) => (
-          <li key={j}>{b}</li>
-        ))}
-      </ul>
-    </div>
   );
 }
