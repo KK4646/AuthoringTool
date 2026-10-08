@@ -46,36 +46,65 @@ describe("normalizeSlide", () => {
     rightLabel: "",
     caption: "",
     bubbles: [] as string[],
+    code: "",
   };
+  const limits = { maxBullets: 5, maxCodeBullets: 2, maxCodeLines: 3 };
 
   it("置き方で使う項目だけを残し、前後の空白と空の項目を落とし、上限で切る", () => {
     expect(
       normalizeSlide(
         { ...raw, layout: "comparison", bullets: [" a ", "", "b", "c"], right: ["x"], leftLabel: " A ", rightLabel: "B", caption: "使わない" },
-        2,
+        { ...limits, maxBullets: 2 },
       ),
     ).toEqual({ layout: "comparison", leftLabel: "A", bullets: ["a", "b"], rightLabel: "B", right: ["x"] });
   });
 
   it("比較の小見出しが無ければ2つのコンテンツ、右の段も無ければ1つのコンテンツにする", () => {
-    expect(normalizeSlide({ ...raw, layout: "comparison", right: ["x"] }, 5)).toEqual({
+    expect(normalizeSlide({ ...raw, layout: "comparison", right: ["x"] }, limits)).toEqual({
       layout: "two-content",
       bullets: ["a"],
       right: ["x"],
     });
-    expect(normalizeSlide({ ...raw, layout: "two-content" }, 5)).toEqual({ layout: "content", bullets: ["a"] });
+    expect(normalizeSlide({ ...raw, layout: "two-content" }, limits)).toEqual({ layout: "content", bullets: ["a"] });
   });
 
   it("説明文・吹き出しの文が空なら1つのコンテンツにする。吹き出しは2つまで", () => {
-    expect(normalizeSlide({ ...raw, layout: "content-with-caption", caption: " " }, 5)).toEqual({
+    expect(normalizeSlide({ ...raw, layout: "content-with-caption", caption: " " }, limits)).toEqual({
       layout: "content",
       bullets: ["a"],
     });
-    expect(normalizeSlide({ ...raw, layout: "bubbles" }, 5)).toEqual({ layout: "content", bullets: ["a"] });
-    expect(normalizeSlide({ ...raw, layout: "bubbles", bubbles: ["1", "2", "3"] }, 5)).toEqual({
+    expect(normalizeSlide({ ...raw, layout: "bubbles" }, limits)).toEqual({ layout: "content", bullets: ["a"] });
+    expect(normalizeSlide({ ...raw, layout: "bubbles", bubbles: ["1", "2", "3"] }, limits)).toEqual({
       layout: "bubbles",
       bullets: ["a"],
       bubbles: ["1", "2"],
     });
+  });
+});
+
+describe("normalizeSlide（コード）", () => {
+  const raw = {
+    layout: "code" as const,
+    bullets: ["a", "b", "c"],
+    right: [] as string[],
+    leftLabel: "",
+    rightLabel: "",
+    caption: "",
+    bubbles: [] as string[],
+    code: "",
+  };
+  const limits = { maxBullets: 5, maxCodeBullets: 2, maxCodeLines: 3 };
+
+  it("字下げを保ち、前後の空行と行末の空白を落とし、行数と箇条書きを上限で切る", () => {
+    const code = "\n\nif (x > 0) {   \n  total += x;\n}\nlog(total);\n\n";
+    expect(normalizeSlide({ ...raw, code }, limits)).toEqual({
+      layout: "code",
+      bullets: ["a", "b"],
+      code: "if (x > 0) {\n  total += x;\n}",
+    });
+  });
+
+  it("コードが空なら1つのコンテンツにする", () => {
+    expect(normalizeSlide({ ...raw, code: " \n " }, limits)).toEqual({ layout: "content", bullets: ["a", "b", "c"] });
   });
 });

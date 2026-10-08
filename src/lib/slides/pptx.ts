@@ -24,7 +24,8 @@ function boxOptions(box: TextBox, fontFace: string) {
     bold: box.bold,
     align: box.align,
     valign: box.valign,
-    fontFace,
+    fontFace: box.fontFace ?? fontFace,
+    ...(box.fill ? { fill: { color: box.fill } } : {}),
     fit: "shrink" as const, // 枠からあふれたら PowerPoint 側で縮小
   };
 }
@@ -73,6 +74,7 @@ export async function buildPptx(deck: Deck): Promise<Buffer> {
       [c.caption, content.caption],
       [c.bubbleLarge, content.bubbles?.[0]],
       [c.bubbleSmall, content.bubbles?.[1]],
+      [c.code, content.code],
     ];
     for (const [box, text] of texts) {
       if (box && text) slide.addText(text, boxOptions(box, font));

@@ -15,6 +15,7 @@ export const SLIDE_LAYOUTS = [
   "comparison",
   "content-with-caption",
   "bubbles",
+  "code",
 ] as const;
 export type SlideLayout = (typeof SLIDE_LAYOUTS)[number];
 
@@ -27,6 +28,7 @@ export const SLIDE_LAYOUT_LABELS: Record<SlideLayout, string> = {
   comparison: "比較",
   "content-with-caption": "タイトル付きのコンテンツ",
   bubbles: "吹き出しコンテンツ",
+  code: "コード",
 };
 
 // 本文スライド1枚分の項目。layout が無ければ「1つのコンテンツ」（それより前の履歴には無い）。
@@ -42,6 +44,7 @@ const slideFields = {
   rightLabel: z.string().optional(), // 比較の右の小見出し
   caption: z.string().optional(), // タイトル付きのコンテンツの左の説明文
   bubbles: z.array(z.string()).optional(), // 吹き出しの文（[大きい吹き出し, 小さい吹き出し]）
+  code: z.string().optional(), // コードの置き方のコード（改行・字下げをそのまま保つ）
 };
 
 // 小項目1つ分のスライド内容（本文スライド1枚）

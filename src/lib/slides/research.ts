@@ -58,7 +58,8 @@ ${numberedTopics(topics)}
 - Web検索は${MAX_SEARCHES}回までです。複数のスライドに使える情報源をまとめて探してください
 - スライドごとに「【スライド番号】」の見出しを付け、要点を日本語の箇条書き（5項目程度まで）でまとめる
 - 具体的な事実・数値・年を優先し、信頼できる情報源（公的機関・論文・大手報道など）を使う
-- 情報が古い可能性があるものは時点を明記する`,
+- 情報が古い可能性があるものは時点を明記する
+- プログラミングなどコードで示すと分かりやすい話題は、短いコード例もメモに含める`,
     },
   ];
 
@@ -109,6 +110,7 @@ export const AI_LAYOUTS = [
   "comparison",
   "content-with-caption",
   "bubbles",
+  "code",
 ] as const;
 type AiLayout = (typeof AI_LAYOUTS)[number];
 
@@ -121,14 +123,19 @@ type ComposedSlide = {
   rightLabel: string;
   caption: string;
   bubbles: string[];
+  code: string;
 };
+
+// normalizeSlide で切りそろえる上限（config/layout.json の content）
+type SlideLimits = { maxBullets: number; maxCodeBullets: number; maxCodeLines: number };
 
 // 本文スライドの見出し・出典以外の中身
 export type SlideBody = Omit<Subsection, "heading" | "sources">;
 
 // AI の返した1枚を、置き方に必要な項目がそろった形に直す。足りなければ1つのコンテンツに戻し、
 // 置き方で使わない項目は捨てる
-export function normalizeSlide(raw: ComposedSlide, maxBullets: number): SlideBody {
+export function normalizeSlide(raw: ComposedSlide, limits: SlideLimits): SlideBody {
+  const { maxBullets } = limits;
   const clean = (list: string[]) =>
     list.map((t) => t.trim()).filter(Boolean).slice(0, maxBullets);
   const bullets = clean(raw.bullets);
@@ -137,6 +144,15 @@ export function normalizeSlide(raw: ComposedSlide, maxBullets: number): SlideBod
   const rightLabel = raw.rightLabel.trim();
   const caption = raw.caption.trim();
   const bubbles = raw.bubbles.map((t) => t.trim()).filter(Boolean).slice(0, 2);
+  // コードは字下げを保つため行頭の空白は残し、前後の空行と行末の空白だけ落とす
+  const code = raw.code
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .join("\n")
+    .replace(/^\n+|\n+$/g, "")
+    .split("\n")
+    .slice(0, limits.maxCodeLines)
+    .join("\n");
 
   switch (raw.layout) {
     case "comparison":
@@ -153,6 +169,9 @@ export function normalizeSlide(raw: ComposedSlide, maxBullets: number): SlideBod
       break;
     case "bubbles":
       if (bubbles.length > 0) return { layout: "bubbles", bullets, bubbles };
+      break;
+    case "code":
+      if (code) return { layout: "code", bullets: bullets.slice(0, limits.maxCodeBullets), code };
       break;
   }
   return { layout: "content", bullets: [...bullets, ...right].slice(0, maxBullets) };
@@ -176,6 +195,7 @@ async function composeSlides(
         rightLabel: z.string(),
         caption: z.string(),
         bubbles: z.array(z.string()),
+        code: z.string(),
       }),
     ),
   });
@@ -206,10 +226,14 @@ number はスライド番号です。全${topics.length}枚すべてについて
 - bubbles: キャラクターがひとこと添えると分かりやすいもの（覚え方・注意点・まとめ）。全体の4枚に1枚程度まで。
   bullets に${limits.maxBullets}項目以内、1項目全角${limits.maxCharsPerColumnBullet}文字以内、
   bubbles に[大きい吹き出し（全角${limits.maxBubbleLargeChars}文字以内）, 小さい吹き出し（全角${limits.maxBubbleSmallChars}文字以内）]の2つ
+- code: コード例を見せるスライド。bullets に${limits.maxCodeBullets}項目以内の短い説明（1項目全角${limits.maxCharsPerBullet}文字以内）、
+  code にコード（${limits.maxCodeLines}行以内・1行半角${limits.maxCodeLineChars}文字以内。改行と字下げはそのまま。説明は // などのコメントで短く）
 - 選んだ置き方で使わない項目は空（"" や []）にする
 
 書き方
 - 文字数は枠に収めるため厳守。体言止めなどで簡潔に
+- コードや記号の並び（{ } ; = + - など）を、箇条書き・説明文・吹き出しに書かない。コードを見せたいときは
+  code の置き方を選んで code に書く。他の置き方では、コードの意味を日本語で説明する
 - メモにない情報は加えない
 
 <notes>
@@ -226,7 +250,7 @@ ${notes}
   return topics.map((t, i) => {
     const slide = byNumber.get(i + 1);
     if (!slide) throw new Error(`${t.topic}の本文を作れませんでした。もう一度試してください。`);
-    return normalizeSlide(slide, limits.maxBullets);
+    return normalizeSlide(slide, limits);
   });
 }
 

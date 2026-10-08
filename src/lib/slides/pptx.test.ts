@@ -76,8 +76,8 @@ describe("buildPptx", () => {
   });
 
   it("サンプルは置き方ごとに1枚ずつ本文を作る", async () => {
-    // 表紙1 + 目次1 + 本文7（置き方7種類）+ 区切り1 + 小項目1 + 出典1
-    expect(slideCount(await buildPptx(SAMPLE_DECK))).toBe(12);
+    // 表紙1 + 目次1 + 本文8（置き方8種類）+ 区切り1 + 小項目1 + 出典1
+    expect(slideCount(await buildPptx(SAMPLE_DECK))).toBe(13);
   });
 
   it("置き方の枠にある項目だけを書く（1段の置き方では右の段を書かない）", async () => {
@@ -90,6 +90,12 @@ describe("buildPptx", () => {
     const has = (buf: Buffer, text: string) => buf.includes(Buffer.from(text));
     expect(has(await buildPptx(deck("two-content")), "右の段だけの文")).toBe(true);
     expect(has(await buildPptx(deck("content")), "右の段だけの文")).toBe(false);
+  });
+
+  it("コードは字下げを保ったまま、等幅フォントの枠に書く", async () => {
+    const buf = await buildPptx(SAMPLE_DECK);
+    expect(buf.includes(Buffer.from("    total = total + x;"))).toBe(true);
+    expect(buf.includes(Buffer.from('typeface="Consolas"'))).toBe(true);
   });
 
   it("出典が無ければ出典スライドは作らない", async () => {

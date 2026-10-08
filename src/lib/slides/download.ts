@@ -76,6 +76,22 @@ export const SAMPLE_DECK: Deck = {
       sources: [],
     },
     {
+      heading: "コード：見出し",
+      layout: "code",
+      bullets: ["コードの短い説明1", "コードの短い説明2"],
+      code: [
+        "// 合計を求める",
+        "let total = 0;",
+        "for (const x of numbers) {",
+        "  if (x > 0) {",
+        "    total = total + x;",
+        "  }",
+        "}",
+        "console.log(total);",
+      ].join("\n"),
+      sources: [],
+    },
+    {
       // 小項目のある中項目（区切りのスライド＋小項目ごとの本文）の配置確認用
       heading: "小項目のある中項目の見出し（区切りのスライド）",
       bullets: [],

@@ -13,6 +13,8 @@ export type TextBox = {
   bold: boolean;
   align: "left" | "center" | "right";
   valign: "top" | "middle" | "bottom";
+  fontFace?: string; // 枠だけ別のフォントにするとき（コード枠の等幅フォントなど）
+  fill?: string; // 枠の塗りつぶし色（コード枠など）
 };
 
 type SlideBase = {
@@ -21,7 +23,7 @@ type SlideBase = {
 };
 
 // 本文スライドの文字枠。heading=見出し、body / left=箇条書き（left は2段の左）、right=2段の右、
-// leftLabel / rightLabel=比較の小見出し、caption=説明文、bubbleLarge / bubbleSmall=吹き出しの文
+// leftLabel / rightLabel=比較の小見出し、caption=説明文、bubbleLarge / bubbleSmall=吹き出しの文、code=コード
 export type ContentLayout = SlideBase &
   Partial<
     Record<
@@ -33,7 +35,8 @@ export type ContentLayout = SlideBase &
       | "rightLabel"
       | "caption"
       | "bubbleLarge"
-      | "bubbleSmall",
+      | "bubbleSmall"
+      | "code",
       TextBox
     >
   >;
@@ -52,6 +55,9 @@ export type Layout = {
     maxCaptionChars: number;
     maxBubbleLargeChars: number;
     maxBubbleSmallChars: number;
+    maxCodeBullets: number;
+    maxCodeLines: number;
+    maxCodeLineChars: number;
   };
   // 本文スライドの置き方ごとの背景と文字枠。枠がある項目だけ描く
   layouts: Record<SlideLayout, ContentLayout>;

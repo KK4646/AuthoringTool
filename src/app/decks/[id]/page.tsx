@@ -103,6 +103,11 @@ function SlideBody({ slide }: { slide: Subsection }) {
       ) : (
         <Bullets items={slide.bullets} />
       )}
+      {layout === "code" && slide.code && (
+        <pre className="overflow-x-auto rounded-lg border border-[var(--border)] p-3 font-mono text-xs">
+          {slide.code}
+        </pre>
+      )}
       {layout === "bubbles" &&
         (slide.bubbles ?? []).map((text, j) => (
           <p key={j} className="w-fit rounded-2xl border border-[var(--border)] px-3 py-1">
