@@ -17,13 +17,13 @@ export async function downloadPptx(deck: Deck): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
-// APIを使わずに文字配置を確認するためのダミー内容
+// APIを使わずに文字配置を確認するためのダミー内容。本文の置き方を1種類ずつ並べる
 export const SAMPLE_DECK: Deck = {
   title: "サンプルタイトル：再生可能エネルギーの現状",
   subtitle: "レイアウト確認用",
   sections: [
     {
-      heading: "中項目の見出しがここに入ります",
+      heading: "1つのコンテンツ：見出しがここに入ります",
       bullets: [
         "1項目目の箇条書き。全角45文字程度までを想定した長さのサンプル文です。",
         "2項目目の箇条書き",
@@ -31,6 +31,48 @@ export const SAMPLE_DECK: Deck = {
         "4項目目の箇条書き",
         "5項目目の箇条書き。最大5項目まで表示されます。",
       ],
+      sources: [],
+    },
+    {
+      heading: "表題なし（目次にだけ出る見出し）",
+      layout: "content-no-heading",
+      bullets: ["表題なしの箇条書き。見出しは出ません", "2項目目の箇条書き", "3項目目の箇条書き"],
+      sources: [],
+    },
+    {
+      heading: "タイトルのみ：見出しだけのスライド",
+      layout: "title-only",
+      bullets: [],
+      sources: [],
+    },
+    {
+      heading: "2つのコンテンツ：見出し",
+      layout: "two-content",
+      bullets: ["左の段の1項目目", "左の段の2項目目。少し長めの文です", "左の段の3項目目"],
+      right: ["右の段の1項目目", "右の段の2項目目。少し長めの文です", "右の段の3項目目"],
+      sources: [],
+    },
+    {
+      heading: "比較：見出し",
+      layout: "comparison",
+      leftLabel: "比較するもの A",
+      bullets: ["A の特徴1", "A の特徴2。少し長めの文です", "A の特徴3"],
+      rightLabel: "比較するもの B",
+      right: ["B の特徴1", "B の特徴2。少し長めの文です", "B の特徴3"],
+      sources: [],
+    },
+    {
+      heading: "タイトル付きのコンテンツ：見出し",
+      layout: "content-with-caption",
+      caption: "左側の説明文。スライドの要点を2〜3文で短く説明します。ここは箇条書きではなく文章です。",
+      bullets: ["右側の箇条書き1", "右側の箇条書き2。少し長めの文です", "右側の箇条書き3"],
+      sources: [],
+    },
+    {
+      heading: "吹き出しコンテンツ：見出し",
+      layout: "bubbles",
+      bullets: ["左側の箇条書き1", "左側の箇条書き2。少し長めの文です", "左側の箇条書き3"],
+      bubbles: ["大きい吹き出しの文。キャラクターのひとことが入ります", "小さい吹き出しの文。短い補足"],
       sources: [],
     },
     {

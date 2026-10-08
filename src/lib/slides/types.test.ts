@@ -119,3 +119,13 @@ describe("allSources", () => {
     expect(allSources(deck)).toEqual([]);
   });
 });
+
+describe("本文スライドの置き方", () => {
+  it("置き方と置き方ごとの項目を読み、知らない置き方は無いもの（1つのコンテンツ）として読む", () => {
+    const two = { heading: "A", layout: "two-content", bullets: ["l"], right: ["r"], sources: [] };
+    expect(parseSections([two])).toEqual([two]);
+    const unknown = parseSections([{ heading: "A", layout: "future", bullets: [], sources: [] }]);
+    expect(unknown).toHaveLength(1);
+    expect(unknown[0].layout).toBeUndefined();
+  });
+});

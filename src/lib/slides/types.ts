@@ -6,20 +6,52 @@ export const SourceSchema = z.object({
   url: z.string(),
 });
 
-// 小項目1つ分のスライド内容（本文スライド1枚）
-export const SubsectionSchema = z.object({
+// 本文スライドの置き方（背景と文字枠の組み合わせ。config/layout.json の layouts のキー）
+export const SLIDE_LAYOUTS = [
+  "content",
+  "content-no-heading",
+  "title-only",
+  "two-content",
+  "comparison",
+  "content-with-caption",
+  "bubbles",
+] as const;
+export type SlideLayout = (typeof SLIDE_LAYOUTS)[number];
+
+// 画面に出す置き方の名前（ユーザーの素材の名前に合わせる）
+export const SLIDE_LAYOUT_LABELS: Record<SlideLayout, string> = {
+  content: "1つのコンテンツ",
+  "content-no-heading": "1つのコンテンツ(表題なし)",
+  "title-only": "タイトルのみ",
+  "two-content": "2つのコンテンツ",
+  comparison: "比較",
+  "content-with-caption": "タイトル付きのコンテンツ",
+  bubbles: "吹き出しコンテンツ",
+};
+
+// 本文スライド1枚分の項目。layout が無ければ「1つのコンテンツ」（それより前の履歴には無い）。
+// bullets は1段の箇条書き、2段の置き方では左の段。置き方で使わない項目は持っていても描かない
+const slideFields = {
   heading: z.string(),
   bullets: z.array(z.string()),
   sources: z.array(SourceSchema),
-});
+  // 知らない値（将来足した置き方など）は無いものとして読み、履歴全体を壊さない
+  layout: z.enum(SLIDE_LAYOUTS).optional().catch(undefined),
+  right: z.array(z.string()).optional(), // 2段の置き方の右の段
+  leftLabel: z.string().optional(), // 比較の左の小見出し
+  rightLabel: z.string().optional(), // 比較の右の小見出し
+  caption: z.string().optional(), // タイトル付きのコンテンツの左の説明文
+  bubbles: z.array(z.string()).optional(), // 吹き出しの文（[大きい吹き出し, 小さい吹き出し]）
+};
+
+// 小項目1つ分のスライド内容（本文スライド1枚）
+export const SubsectionSchema = z.object(slideFields);
 
 // 中項目1つ分のスライド内容。
 // 小項目があれば中項目は区切りのスライドになり、小項目ごとに本文スライドを作る（bullets / sources は空）。
 // 小項目が無ければ今までどおり中項目1枚。subsections は後から足した項目なので、古い履歴には無い
 export const SectionSchema = z.object({
-  heading: z.string(),
-  bullets: z.array(z.string()),
-  sources: z.array(SourceSchema),
+  ...slideFields,
   subsections: z.array(SubsectionSchema).optional(),
 });
 

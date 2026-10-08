@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import PptxGenJS from "pptxgenjs";
 import { loadLayout, type TextBox } from "@/lib/slides/layout";
-import { allSources, type Deck } from "@/lib/slides/types";
+import { allSources, type Deck, type Subsection } from "@/lib/slides/types";
 
 type Slide = ReturnType<PptxGenJS["addSlide"]>;
 
@@ -60,25 +60,44 @@ export async function buildPptx(deck: Deck): Promise<Buffer> {
     boxOptions(a.body, font),
   );
 
-  // 本文スライド。小項目のある中項目は、区切りのスライドの後に小項目ごとに1枚
-  const c = layout.content;
-  const addContentSlide = (heading: string, bullets: string[]) => {
+  // 本文スライド。置き方（layout）の設定にある枠だけに書く。小項目のある中項目は、
+  // 区切りのスライドの後に小項目ごとに1枚
+  const addContentSlide = (content: Subsection) => {
+    const c = layout.layouts[content.layout ?? "content"];
     const slide = pptx.addSlide();
     setBackground(slide, c.background, c.backgroundColor);
-    slide.addText(heading, boxOptions(c.heading, font));
-    slide.addText(bulletLines(bullets), boxOptions(c.body, font));
+    const texts: [TextBox | undefined, string | undefined][] = [
+      [c.heading, content.heading],
+      [c.leftLabel, content.leftLabel],
+      [c.rightLabel, content.rightLabel],
+      [c.caption, content.caption],
+      [c.bubbleLarge, content.bubbles?.[0]],
+      [c.bubbleSmall, content.bubbles?.[1]],
+    ];
+    for (const [box, text] of texts) {
+      if (box && text) slide.addText(text, boxOptions(box, font));
+    }
+    // 1段の置き方は body、2段の置き方は left に、同じ bullets を書く
+    const lists: [TextBox | undefined, string[] | undefined][] = [
+      [c.body, content.bullets],
+      [c.left, content.bullets],
+      [c.right, content.right],
+    ];
+    for (const [box, lines] of lists) {
+      if (box && lines && lines.length > 0) slide.addText(bulletLines(lines), boxOptions(box, font));
+    }
   };
   const d = layout.divider;
   for (const section of deck.sections) {
     const subsections = section.subsections ?? [];
     if (subsections.length === 0) {
-      addContentSlide(section.heading, section.bullets);
+      addContentSlide(section);
       continue;
     }
     const divider = pptx.addSlide();
     setBackground(divider, d.background, d.backgroundColor);
     divider.addText(section.heading, boxOptions(d.heading, font));
-    for (const sub of subsections) addContentSlide(sub.heading, sub.bullets);
+    for (const sub of subsections) addContentSlide(sub);
   }
 
   // 出典（多いときは複数枚に分ける）

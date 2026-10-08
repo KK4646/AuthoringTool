@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import type { SlideLayout } from "@/lib/slides/types";
 
 // 文字枠1つ分の設定（単位はインチ。スライドは幅13.333 × 高さ7.5）
 export type TextBox = {
@@ -19,18 +20,34 @@ type SlideBase = {
   backgroundColor: string; // 画像が無いときの背景色
 };
 
+// 本文スライドの文字枠。heading=見出し、body / left=箇条書き（left は2段の左）、right=2段の右、
+// leftLabel / rightLabel=比較の小見出し、caption=説明文、bubbleLarge / bubbleSmall=吹き出しの文
+export type ContentLayout = SlideBase &
+  Partial<
+    Record<
+      | "heading"
+      | "body"
+      | "left"
+      | "right"
+      | "leftLabel"
+      | "rightLabel"
+      | "caption"
+      | "bubbleLarge"
+      | "bubbleSmall",
+      TextBox
+    >
+  >;
+
 export type Layout = {
   fontFace: string;
   title: SlideBase & { title: TextBox; subtitle: TextBox };
   agenda: SlideBase & { heading: TextBox; body: TextBox };
   // 小項目のある中項目の、区切りのスライド（中項目の見出しだけ）
   divider: SlideBase & { heading: TextBox };
-  content: SlideBase & {
-    heading: TextBox;
-    body: TextBox;
-    maxBullets: number;
-    maxCharsPerBullet: number;
-  };
+  // 本文の箇条書きの上限（AI への指示にも使う）
+  content: { maxBullets: number; maxCharsPerBullet: number };
+  // 本文スライドの置き方ごとの背景と文字枠。枠がある項目だけ描く
+  layouts: Record<SlideLayout, ContentLayout>;
   sources: SlideBase & { heading: TextBox; body: TextBox; maxPerSlide: number };
 };
 

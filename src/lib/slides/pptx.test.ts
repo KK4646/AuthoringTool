@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildPptx } from "./pptx";
+import { SAMPLE_DECK } from "./download";
 import type { Deck } from "./types";
 
 // zip の中のスライドファイル名を数える
@@ -72,6 +73,23 @@ describe("buildPptx", () => {
     };
     // 表紙1 + 目次1 + A 1 + B の区切り1 + 小項目2 + 出典1
     expect(slideCount(await buildPptx(deck))).toBe(7);
+  });
+
+  it("サンプルは置き方ごとに1枚ずつ本文を作る", async () => {
+    // 表紙1 + 目次1 + 本文7（置き方7種類）+ 区切り1 + 小項目1 + 出典1
+    expect(slideCount(await buildPptx(SAMPLE_DECK))).toBe(12);
+  });
+
+  it("置き方の枠にある項目だけを書く（1段の置き方では右の段を書かない）", async () => {
+    const deck = (layout: "content" | "two-content"): Deck => ({
+      title: "テスト",
+      subtitle: "",
+      sources: [],
+      sections: [{ heading: "A", layout, bullets: ["左の段"], right: ["右の段だけの文"], sources: [] }],
+    });
+    const has = (buf: Buffer, text: string) => buf.includes(Buffer.from(text));
+    expect(has(await buildPptx(deck("two-content")), "右の段だけの文")).toBe(true);
+    expect(has(await buildPptx(deck("content")), "右の段だけの文")).toBe(false);
   });
 
   it("出典が無ければ出典スライドは作らない", async () => {
