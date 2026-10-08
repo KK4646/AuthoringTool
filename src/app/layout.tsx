@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Zen_Maru_Gothic, Quicksand } from "next/font/google";
 import { BottomTabBar } from "@/components/BottomTabBar";
-import { createClient, getAuthUser } from "@/lib/supabase/server";
-import { getAccentColor } from "@/lib/userSettings";
+import { getAuthUser } from "@/lib/supabase/server";
 import { DEFAULT_ACCENT_COLOR } from "@/lib/colors";
 import "./globals.css";
 
@@ -30,15 +29,12 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const user = await getAuthUser();
 
-  const accentColor = user
-    ? await getAccentColor(await createClient(), user.id)
-    : DEFAULT_ACCENT_COLOR;
-
   return (
     <html
       lang="ja"
       className={`${zenMaruGothic.variable} ${quicksand.variable} h-full antialiased`}
-      style={{ "--accent": accentColor } as React.CSSProperties}
+      // テーマカラーはブルーで固定（設定画面では選ばない。../CLAUDE.md の「既知の差異」）
+      style={{ "--accent": DEFAULT_ACCENT_COLOR } as React.CSSProperties}
     >
       <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
         <div

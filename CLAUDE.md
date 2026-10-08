@@ -14,6 +14,9 @@ DB（共有Supabase）のルールは ../db-schemas/CLAUDE.md を参照。
 - `src/lib/database.types.ts` は 0103 から手書きした仮の型（Supabase CLI が未導入のため）。
   列を足したらここも直す。CLI を入れたら `supabase gen types typescript --schema slideapp` で置き換える
 
+- テーマカラーはブルー（`DEFAULT_ACCENT_COLOR`）で固定。設定画面に選ぶ項目は置かない（共通ルールの例外。
+  `../CLAUDE.md` の「既知の差異」）。`user_settings` 表は残っているが読み書きしない
+
 ## データモデルの決定事項
 
 - 中項目ごとの中身（見出し・箇条書き・出典）は `decks.sections` (jsonb) に持つ。
