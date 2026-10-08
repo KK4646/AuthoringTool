@@ -3,11 +3,17 @@ import path from "node:path";
 import PptxGenJS from "pptxgenjs";
 import { loadLayout, type TextBox } from "@/lib/slides/layout";
 import type { Deck } from "@/lib/slides/types";
+import type { BackgroundSlot } from "@/lib/slides/backgrounds";
 
 type Slide = ReturnType<PptxGenJS["addSlide"]>;
 
-// 背景画像を敷く。画像ファイルが無ければ設定の背景色で塗る
-function setBackground(slide: Slide, imagePath: string, color: string) {
+// 背景画像を敷く。アップロード画像（data 形式）があればそれを、無ければ既定の画像ファイルを使い、
+// どちらも無ければ設定の背景色で塗る
+function setBackground(slide: Slide, imagePath: string, color: string, uploaded?: string) {
+  if (uploaded) {
+    slide.background = { data: uploaded };
+    return;
+  }
   const file = path.join(process.cwd(), "public", imagePath);
   slide.background = fs.existsSync(file) ? { path: file } : { color };
 }
@@ -36,7 +42,11 @@ function bulletLines(lines: string[]) {
   }));
 }
 
-export async function buildPptx(deck: Deck): Promise<Buffer> {
+// backgrounds: 設定画面でアップロードした背景画像（pptxgenjs の data 形式）。無い枠は既定の画像
+export async function buildPptx(
+  deck: Deck,
+  backgrounds: Partial<Record<BackgroundSlot, string>> = {},
+): Promise<Buffer> {
   const layout = loadLayout();
   const font = layout.fontFace;
   const pptx = new PptxGenJS();
@@ -46,14 +56,14 @@ export async function buildPptx(deck: Deck): Promise<Buffer> {
   // 表紙
   const t = layout.title;
   const cover = pptx.addSlide();
-  setBackground(cover, t.background, t.backgroundColor);
+  setBackground(cover, t.background, t.backgroundColor, backgrounds.title);
   cover.addText(deck.title, boxOptions(t.title, font));
   if (deck.subtitle) cover.addText(deck.subtitle, boxOptions(t.subtitle, font));
 
   // 目次
   const a = layout.agenda;
   const agenda = pptx.addSlide();
-  setBackground(agenda, a.background, a.backgroundColor);
+  setBackground(agenda, a.background, a.backgroundColor, backgrounds.content);
   agenda.addText("目次", boxOptions(a.heading, font));
   agenda.addText(
     bulletLines(deck.sections.map((s) => s.heading)),
@@ -64,7 +74,7 @@ export async function buildPptx(deck: Deck): Promise<Buffer> {
   const c = layout.content;
   for (const section of deck.sections) {
     const slide = pptx.addSlide();
-    setBackground(slide, c.background, c.backgroundColor);
+    setBackground(slide, c.background, c.backgroundColor, backgrounds.content);
     slide.addText(section.heading, boxOptions(c.heading, font));
     slide.addText(bulletLines(section.bullets), boxOptions(c.body, font));
   }
@@ -76,7 +86,7 @@ export async function buildPptx(deck: Deck): Promise<Buffer> {
   for (let i = 0; i < unique.length; i += s.maxPerSlide) {
     const page = unique.slice(i, i + s.maxPerSlide);
     const slide = pptx.addSlide();
-    setBackground(slide, s.background, s.backgroundColor);
+    setBackground(slide, s.background, s.backgroundColor, backgrounds.content);
     slide.addText(i === 0 ? "出典" : "出典（続き）", boxOptions(s.heading, font));
     slide.addText(
       page.map((src) => ({

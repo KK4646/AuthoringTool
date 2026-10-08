@@ -11,7 +11,10 @@ npm test
 
 ## 背景画像の差し替え
 
-`public/backgrounds/` に置く（16:9、例 1920×1080）。`title.png` が表紙、`content.png` が目次・本文・出典。
+設定画面の「背景画像」からアップロードできる（16:9 の PNG / JPEG、5MB まで、例 1920×1080）。
+表紙用と、目次・本文・出典の共通用の2枚。アップロードしていない枠は、次の既定の画像を使う。
+
+既定の画像は `public/backgrounds/` に置く。`title.png` が表紙、`content.png` が目次・本文・出典。
 今の2枚は `node scripts/make-sample-backgrounds.mjs` で作った仮画像（同名で上書きすれば差し替わる）。
 画像が無いときは `config/layout.json` の `backgroundColor` で塗る。
 

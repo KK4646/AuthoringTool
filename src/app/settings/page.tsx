@@ -3,10 +3,16 @@ import { createClient } from "@/lib/supabase/server";
 import { getAccentColor } from "@/lib/userSettings";
 import { AccentColorPicker } from "@/components/AccentColorPicker";
 import { updateAccentColorAction } from "@/app/settings/actions";
+import { BackgroundPicker } from "@/components/BackgroundPicker";
+import { getBackgroundPreviewUrls } from "@/lib/slides/backgrounds";
 
 export default async function SettingsPage() {
   const user = await requireUser("/settings");
-  const accentColor = await getAccentColor(await createClient(), user.id);
+  const supabase = await createClient();
+  const [accentColor, backgroundUrls] = await Promise.all([
+    getAccentColor(supabase, user.id),
+    getBackgroundPreviewUrls(supabase, user.id),
+  ]);
 
   return (
     <main className="mx-auto flex w-full max-w-xl flex-col gap-8 px-4 py-6">
@@ -17,11 +23,12 @@ export default async function SettingsPage() {
         <AccentColorPicker current={accentColor} action={updateAccentColorAction} />
       </section>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="font-semibold">背景画像と文字の配置</h2>
+      <section className="flex flex-col gap-3">
+        <h2 className="font-semibold">背景画像</h2>
         <p className="text-sm text-[var(--muted)]">
-          背景画像は public/backgrounds/、文字の位置・大きさ・色は config/layout.json で変えます（README 参照）。
+          16:9 の PNG / JPEG（5MB まで、例 1920×1080）。文字の位置・大きさ・色は config/layout.json で変えます（README 参照）。
         </p>
+        <BackgroundPicker userId={user.id} uploadedUrls={backgroundUrls} />
       </section>
 
       <form action="/auth/signout" method="post">

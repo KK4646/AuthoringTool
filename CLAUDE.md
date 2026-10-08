@@ -18,15 +18,16 @@ DB（共有Supabase）のルールは ../db-schemas/CLAUDE.md を参照。
 
 - 中項目ごとの中身（見出し・箇条書き・出典）は `decks.sections` (jsonb) に持つ。
   中項目単位で検索・集計しないため列に分けない。読むときは `parseSections()` で形を確かめる
-- 背景画像（`public/backgrounds/`）と文字枠の位置（`config/layout.json`）はアプリ共通。
-  ユーザーごとには持たない。どちらもサーバーで fs から読むので、`next.config.ts` の
-  `outputFileTracingIncludes` で Vercel にも同梱している
+- 背景画像は設定画面でアップロードしたもの（Storage の `slideapp-backgrounds`、キーは `<user_id>/title` と
+  `<user_id>/content`）を優先し、無ければ既定の `public/backgrounds/` を使う。表には持たない
+- 既定の背景画像と文字枠の位置（`config/layout.json`）はアプリ共通。どちらもサーバーで fs から読むので、
+  `next.config.ts` の `outputFileTracingIncludes` で Vercel にも同梱している
 - 箇条書きの数・1項目の文字数の上限は `config/layout.json` の `maxBullets` / `maxCharsPerBullet`。
   AI への指示にも同じ値を使う
 
 ## 対象外
 
-箇条書きの手直し画面／ユーザーごとの背景画像のアップロード／スライド枚数の自動調整
+箇条書きの手直し画面／スライド枚数の自動調整
 
 <!-- BEGIN:nextjs-agent-rules -->
 
