@@ -1,10 +1,10 @@
 {
-  "fontFace": "Hiragino Sans",
+  "fontFace": "Noto Sans JP",
   "title": {
     "background": "backgrounds/title.png",
     "backgroundColor": "1F2A44",
-    "title": { "x": 0.8, "y": 2.4, "w": 11.7, "h": 1.6, "fontSize": 44, "color": "FFFFFF", "bold": true, "align": "left", "valign": "bottom" },
-    "subtitle": { "x": 0.8, "y": 4.2, "w": 11.7, "h": 0.9, "fontSize": 22, "color": "DDE3F0", "bold": false, "align": "left", "valign": "top" }
+    "title": { "x": 0.8, "y": 2.0, "w": 11.7, "h": 1.6, "fontSize": 48, "color": "FFFFFF", "bold": true, "align": "left", "valign": "bottom" },
+    "subtitle": { "x": 0.8, "y": 3.92, "w": 11.7, "h": 0.9, "fontSize": 20, "color": "DDE3F0", "bold": true, "align": "left", "valign": "top" }
   },
   "agenda": {
     "background": "backgrounds/content.png",
