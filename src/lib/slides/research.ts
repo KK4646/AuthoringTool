@@ -3,9 +3,9 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { BetaMessageParam } from "@anthropic-ai/sdk/resources/beta/messages/messages";
 import { z } from "zod";
 import { loadLayout } from "@/lib/slides/layout";
-import type { Deck, Outline, ResearchRequest, Section, Source } from "@/lib/slides/types";
+import type { Deck, Outline, ResearchRequest, Section, Source, Subsection } from "@/lib/slides/types";
 
-// API 料金を抑えるため、調べる部分は Sonnet、箇条書きに整える部分は Haiku を使う（2026-10-08）
+// API 料金を抑えるため、調べる部分は Sonnet、置き方を選んで本文に整える部分は Haiku を使う（2026-10-08）
 const RESEARCH_MODEL = "claude-sonnet-5-5";
 const BULLETS_MODEL = "claude-haiku-5-5";
 // 安全判定で断られた場合に、サーバー側で別モデルへ自動で切り替える設定（Haiku には無い）
@@ -101,15 +101,83 @@ ${numberedTopics(topics)}
   return { notes, sources: [...sources.values()] };
 }
 
-// リサーチのメモを、全スライド分の短い箇条書きに1回の依頼で整える。戻り値は topics と同じ並び
-async function toBullets(
+// AI が選んでよい本文の置き方。タイトルのみ・表題なしは調べた中身が載らないので、
+// 詳細画面で手で選ぶ用にする
+export const AI_LAYOUTS = [
+  "content",
+  "two-content",
+  "comparison",
+  "content-with-caption",
+  "bubbles",
+] as const;
+type AiLayout = (typeof AI_LAYOUTS)[number];
+
+// AI が返す本文スライド1枚分。構造化出力で扱いやすいよう、使わない項目も空で必ず返させる
+type ComposedSlide = {
+  layout: AiLayout;
+  bullets: string[];
+  right: string[];
+  leftLabel: string;
+  rightLabel: string;
+  caption: string;
+  bubbles: string[];
+};
+
+// 本文スライドの見出し・出典以外の中身
+export type SlideBody = Omit<Subsection, "heading" | "sources">;
+
+// AI の返した1枚を、置き方に必要な項目がそろった形に直す。足りなければ1つのコンテンツに戻し、
+// 置き方で使わない項目は捨てる
+export function normalizeSlide(raw: ComposedSlide, maxBullets: number): SlideBody {
+  const clean = (list: string[]) =>
+    list.map((t) => t.trim()).filter(Boolean).slice(0, maxBullets);
+  const bullets = clean(raw.bullets);
+  const right = clean(raw.right);
+  const leftLabel = raw.leftLabel.trim();
+  const rightLabel = raw.rightLabel.trim();
+  const caption = raw.caption.trim();
+  const bubbles = raw.bubbles.map((t) => t.trim()).filter(Boolean).slice(0, 2);
+
+  switch (raw.layout) {
+    case "comparison":
+      if (right.length > 0 && leftLabel && rightLabel) {
+        return { layout: "comparison", leftLabel, bullets, rightLabel, right };
+      }
+      if (right.length > 0) return { layout: "two-content", bullets, right };
+      break;
+    case "two-content":
+      if (right.length > 0) return { layout: "two-content", bullets, right };
+      break;
+    case "content-with-caption":
+      if (caption) return { layout: "content-with-caption", caption, bullets };
+      break;
+    case "bubbles":
+      if (bubbles.length > 0) return { layout: "bubbles", bullets, bubbles };
+      break;
+  }
+  return { layout: "content", bullets: [...bullets, ...right].slice(0, maxBullets) };
+}
+
+// リサーチのメモから、全スライド分の置き方と本文を1回の依頼で作る。戻り値は topics と同じ並び
+async function composeSlides(
   title: string,
   topics: SlideTopic[],
   notes: string,
-): Promise<string[][]> {
-  const { maxBullets, maxCharsPerBullet } = loadLayout().content;
+): Promise<SlideBody[]> {
+  const limits = loadLayout().content;
   const schema = z.object({
-    slides: z.array(z.object({ number: z.number().int(), bullets: z.array(z.string()) })),
+    slides: z.array(
+      z.object({
+        number: z.number().int(),
+        layout: z.enum(AI_LAYOUTS),
+        bullets: z.array(z.string()),
+        right: z.array(z.string()),
+        leftLabel: z.string(),
+        rightLabel: z.string(),
+        caption: z.string(),
+        bubbles: z.array(z.string()),
+      }),
+    ),
   });
   const client = createAnthropic();
 
@@ -124,11 +192,25 @@ async function toBullets(
 
 ${numberedTopics(topics)}
 
-次のリサーチメモをもとに、スライドごとに箇条書きを作ってください。number はスライド番号です。
-- 全${topics.length}枚すべてについて作る
-- 1枚あたり${maxBullets}項目以内
-- 1項目あたり全角${maxCharsPerBullet}文字以内（スライドの枠に収めるため厳守）
-- 体言止めなどで簡潔に。メモにない情報は加えない
+次のリサーチメモをもとに、スライドごとに置き方（layout）を選び、その置き方の項目を埋めてください。
+number はスライド番号です。全${topics.length}枚すべてについて作ってください。
+
+置き方の選び方（内容に合うものを選ぶ。迷ったら content）
+- content: 見出し＋箇条書き1段。bullets に${limits.maxBullets}項目以内、1項目全角${limits.maxCharsPerBullet}文字以内
+- two-content: 2つのまとまりを左右2段で並べる。bullets（左）と right（右）にそれぞれ${limits.maxBullets}項目以内、
+  1項目全角${limits.maxCharsPerColumnBullet}文字以内
+- comparison: 2つのものを比べる話題（AとBの違い・長所と短所・昔と今など）。leftLabel / rightLabel に比べるものの名前
+  （全角12文字以内）、bullets（左）と right（右）にそれぞれ${limits.maxBullets}項目以内、1項目全角${limits.maxCharsPerColumnBullet}文字以内
+- content-with-caption: 用語や仕組みを短く説明してから要点を並べる。caption に説明文（全角${limits.maxCaptionChars}文字以内・文章）、
+  bullets に${limits.maxBullets}項目以内、1項目全角${limits.maxCharsPerColumnBullet}文字以内
+- bubbles: キャラクターがひとこと添えると分かりやすいもの（覚え方・注意点・まとめ）。全体の4枚に1枚程度まで。
+  bullets に${limits.maxBullets}項目以内、1項目全角${limits.maxCharsPerColumnBullet}文字以内、
+  bubbles に[大きい吹き出し（全角${limits.maxBubbleLargeChars}文字以内）, 小さい吹き出し（全角${limits.maxBubbleSmallChars}文字以内）]の2つ
+- 選んだ置き方で使わない項目は空（"" や []）にする
+
+書き方
+- 文字数は枠に収めるため厳守。体言止めなどで簡潔に
+- メモにない情報は加えない
 
 <notes>
 ${notes}
@@ -138,42 +220,38 @@ ${notes}
   });
 
   if (response.stop_reason === "refusal" || !response.parsed_output) {
-    throw new Error("箇条書きを作れませんでした。もう一度試してください。");
+    throw new Error("スライドの本文を作れませんでした。もう一度試してください。");
   }
-  const byNumber = new Map(response.parsed_output.slides.map((s) => [s.number, s.bullets]));
+  const byNumber = new Map(response.parsed_output.slides.map((s) => [s.number, s]));
   return topics.map((t, i) => {
-    const bullets = byNumber.get(i + 1);
-    if (!bullets) throw new Error(`${t.topic}の箇条書きを作れませんでした。もう一度試してください。`);
-    return bullets.slice(0, maxBullets);
+    const slide = byNumber.get(i + 1);
+    if (!slide) throw new Error(`${t.topic}の本文を作れませんでした。もう一度試してください。`);
+    return normalizeSlide(slide, limits.maxBullets);
   });
 }
 
-// 本文スライドごとの箇条書き（listSlideTopics と同じ並び）を、中項目・小項目の形に戻す
-export function assembleSections(outlines: Outline[], bulletsList: string[][]): Section[] {
+// 本文スライドごとの中身（listSlideTopics と同じ並び）を、中項目・小項目の形に戻す
+export function assembleSections(outlines: Outline[], bodies: SlideBody[]): Section[] {
   let i = 0;
   return outlines.map(({ heading, subheadings }) => {
     if (subheadings.length === 0) {
-      return { heading, bullets: bulletsList[i++], sources: [] };
+      return { heading, ...bodies[i++], sources: [] };
     }
-    const subsections = subheadings.map((sub) => ({
-      heading: sub,
-      bullets: bulletsList[i++],
-      sources: [],
-    }));
+    const subsections = subheadings.map((sub) => ({ heading: sub, ...bodies[i++], sources: [] }));
     return { heading, bullets: [], sources: [], subsections };
   });
 }
 
-// 全スライド分を1回で調べ、1回で箇条書きに整えて、スライド全体の内容を作る。
+// 全スライド分を1回で調べ、1回で置き方を選んで本文を作り、スライド全体の内容を作る。
 // 出典はスライドごとに分けず、全体で1つの一覧にする
 export async function researchDeck(req: ResearchRequest): Promise<Deck> {
   const topics = listSlideTopics(req.sections);
   const { notes, sources } = await researchAll(req.title, topics);
-  const bulletsList = await toBullets(req.title, topics, notes);
+  const bodies = await composeSlides(req.title, topics, notes);
   return {
     title: req.title,
     subtitle: req.subtitle,
-    sections: assembleSections(req.sections, bulletsList),
+    sections: assembleSections(req.sections, bodies),
     sources,
   };
 }

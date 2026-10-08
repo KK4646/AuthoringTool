@@ -43,7 +43,9 @@ npm test
 | `content-with-caption` | タイトル付きのコンテンツ | `heading` `caption`（左の説明文） `body` |
 | `bubbles` | 吹き出しコンテンツ | `heading` `body` `bubbleLarge` `bubbleSmall` |
 
-`content` の `maxBullets`（箇条書きの最大数）と `maxCharsPerBullet`（1項目の最大文字数）は AI への指示にも使う。
+`content` の項目数・文字数の上限は AI への指示に使う（枠に収めるため）。`maxBullets` 箇条書きの最大数、
+`maxCharsPerBullet` 1段の1項目、`maxCharsPerColumnBullet` 2段・説明文付き・吹き出しの1項目、
+`maxCaptionChars` 説明文、`maxBubbleLargeChars` / `maxBubbleSmallChars` 吹き出しの文。
 `fontFace` は `Noto Sans JP`（2026-10-08 にユーザーの指定で変更）。開く端末に入っていないと別のフォントで表示される。
 保存すれば次の生成から反映される（再起動不要）。作成画面の「サンプル文で配置を確認」は API を使わず、本文の置き方を1種類ずつ並べた .pptx を出す。
 タイトル・サブタイトルを入力してあれば、表紙はその文で出る（空欄はダミーの文）。

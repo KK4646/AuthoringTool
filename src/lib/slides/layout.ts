@@ -44,8 +44,15 @@ export type Layout = {
   agenda: SlideBase & { heading: TextBox; body: TextBox };
   // 小項目のある中項目の、区切りのスライド（中項目の見出しだけ）
   divider: SlideBase & { heading: TextBox };
-  // 本文の箇条書きの上限（AI への指示にも使う）
-  content: { maxBullets: number; maxCharsPerBullet: number };
+  // 本文の文字数・項目数の上限（AI への指示に使う）。ColumnBullet は2段・説明文付き・吹き出しの置き方の箇条書き
+  content: {
+    maxBullets: number;
+    maxCharsPerBullet: number;
+    maxCharsPerColumnBullet: number;
+    maxCaptionChars: number;
+    maxBubbleLargeChars: number;
+    maxBubbleSmallChars: number;
+  };
   // 本文スライドの置き方ごとの背景と文字枠。枠がある項目だけ描く
   layouts: Record<SlideLayout, ContentLayout>;
   sources: SlideBase & { heading: TextBox; body: TextBox; maxPerSlide: number };

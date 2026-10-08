@@ -8,6 +8,7 @@ import {
   allSources,
   parseSections,
   parseSources,
+  SLIDE_LAYOUT_LABELS,
   type Deck,
   type Subsection,
 } from "@/lib/slides/types";
@@ -84,13 +85,44 @@ export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
   );
 }
 
-// 本文スライド1枚分の箇条書き。出典は画面の最後にまとめて出す
+// 本文スライド1枚分（置き方の名前と、置き方ごとの中身）。出典は画面の最後にまとめて出す
 function SlideBody({ slide }: { slide: Subsection }) {
+  const layout = slide.layout ?? "content";
+  const twoColumns = layout === "two-content" || layout === "comparison";
   return (
-    <ul className="list-disc space-y-1 pl-5 text-sm">
-      {slide.bullets.map((b, j) => (
-        <li key={j}>{b}</li>
-      ))}
-    </ul>
+    <div className="flex flex-col gap-2 text-sm">
+      <span className="w-fit rounded-full border border-[var(--border)] px-2 py-0.5 text-xs text-[var(--muted)]">
+        {SLIDE_LAYOUT_LABELS[layout]}
+      </span>
+      {layout === "content-with-caption" && slide.caption && <p>{slide.caption}</p>}
+      {twoColumns ? (
+        <div className="grid grid-cols-2 gap-3">
+          <Bullets label={layout === "comparison" ? slide.leftLabel : undefined} items={slide.bullets} />
+          <Bullets label={layout === "comparison" ? slide.rightLabel : undefined} items={slide.right ?? []} />
+        </div>
+      ) : (
+        <Bullets items={slide.bullets} />
+      )}
+      {layout === "bubbles" &&
+        (slide.bubbles ?? []).map((text, j) => (
+          <p key={j} className="w-fit rounded-2xl border border-[var(--border)] px-3 py-1">
+            {text}
+          </p>
+        ))}
+    </div>
+  );
+}
+
+// 箇条書き（比較のときは小見出し付き）
+function Bullets({ label, items }: { label?: string; items: string[] }) {
+  return (
+    <div className="flex flex-col gap-1">
+      {label && <p className="font-semibold">{label}</p>}
+      <ul className="list-disc space-y-1 pl-5">
+        {items.map((b, j) => (
+          <li key={j}>{b}</li>
+        ))}
+      </ul>
+    </div>
   );
 }

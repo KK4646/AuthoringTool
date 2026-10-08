@@ -19,7 +19,11 @@
   },
   "content": {
     "maxBullets": 5,
-    "maxCharsPerBullet": 45
+    "maxCharsPerBullet": 45,
+    "maxCharsPerColumnBullet": 22,
+    "maxCaptionChars": 80,
+    "maxBubbleLargeChars": 40,
+    "maxBubbleSmallChars": 25
   },
   "layouts": {
     "content": {
