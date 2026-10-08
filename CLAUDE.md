@@ -25,6 +25,8 @@ DB（共有Supabase）のルールは ../db-schemas/CLAUDE.md を参照。
   `<user_id>/content`）を優先し、無ければ既定の `public/backgrounds/` を使う。表には持たない
 - 既定の背景画像と文字枠の位置（`config/layout.json`）はアプリ共通。どちらもサーバーで fs から読むので、
   `next.config.ts` の `outputFileTracingIncludes` で Vercel にも同梱している
+- 中項目のテンプレートは `templates` 表（`headings` jsonb）。名前は本人の中で一意で、同じ名前の保存は上書き。
+  読むときは `parseHeadings()` で形を確かめる
 - 箇条書きの数・1項目の文字数の上限は `config/layout.json` の `maxBullets` / `maxCharsPerBullet`。
   AI への指示にも同じ値を使う
 

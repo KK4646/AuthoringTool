@@ -1,17 +1,24 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { downloadPptx, SAMPLE_DECK } from "@/lib/slides/download";
 import { MAX_SECTIONS } from "@/lib/slides/types";
+import { MAX_TEMPLATE_NAME, type Template } from "@/lib/slides/templates";
+import { saveTemplateAction } from "@/app/templates/actions";
+import { OriginalDropdown } from "@/components/OriginalDropdown";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 const inputClass =
   "w-full rounded-lg border border-[var(--border-strong)] bg-[var(--background)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]";
 
 type SectionInput = { id: number; text: string };
 
-/** タイトルと中項目を入れてリサーチを始めるフォーム。終わったら履歴の詳細へ移る */
-export function DeckForm() {
+/**
+ * タイトルと中項目を入れてリサーチを始めるフォーム。終わったら履歴の詳細へ移る。
+ * 中項目はテンプレートから埋めたり、今の内容をテンプレートとして保存したりできる
+ */
+export function DeckForm({ templates }: { templates: Template[] }) {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
@@ -20,6 +27,15 @@ export function DeckForm() {
   const [loading, setLoading] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState("");
+
+  // テンプレート
+  const [templateId, setTemplateId] = useState("");
+  const [saving, setSaving] = useState(false); // 保存欄を開いているか
+  const [templateName, setTemplateName] = useState("");
+  const [confirmingOverwrite, setConfirmingOverwrite] = useState(false);
+  const [templateMessage, setTemplateMessage] = useState("");
+  const [templateError, setTemplateError] = useState("");
+  const [isSavingTemplate, startSaveTemplate] = useTransition();
 
   // リサーチ中の経過秒数を表示する
   useEffect(() => {
@@ -41,6 +57,45 @@ export function DeckForm() {
 
   function updateSection(id: number, text: string) {
     setSectionInputs((list) => list.map((s) => (s.id === id ? { ...s, text } : s)));
+  }
+
+  // テンプレートを選ぶと、中項目をその内容で置き換える
+  function applyTemplate(id: string) {
+    setTemplateId(id);
+    const template = templates.find((t) => t.id === id);
+    if (!template || template.headings.length === 0) return;
+    setSectionInputs(template.headings.map((text) => ({ id: nextId.current++, text })));
+  }
+
+  function openSaveTemplate() {
+    // 選んだテンプレートがあればその名前を入れておく（そのまま保存すると上書き）
+    setTemplateName(templates.find((t) => t.id === templateId)?.name ?? "");
+    setTemplateMessage("");
+    setTemplateError("");
+    setSaving(true);
+  }
+
+  function requestSaveTemplate() {
+    const name = templateName.trim();
+    if (templates.some((t) => t.name === name)) {
+      setConfirmingOverwrite(true);
+      return;
+    }
+    saveTemplate();
+  }
+
+  function saveTemplate() {
+    setConfirmingOverwrite(false);
+    setTemplateError("");
+    startSaveTemplate(async () => {
+      const result = await saveTemplateAction(templateName, sections);
+      if (result.error) {
+        setTemplateError(result.error);
+        return;
+      }
+      setSaving(false);
+      setTemplateMessage(`テンプレート「${templateName.trim()}」を保存しました。`);
+    });
   }
 
   async function handleResearch() {
@@ -108,6 +163,17 @@ export function DeckForm() {
         <span className="font-medium">
           中項目（1つ以上・最大{MAX_SECTIONS}個。1つにつき本文スライド1枚）
         </span>
+        {templates.length > 0 && (
+          // ドロップダウンは既定で全幅なので、親で幅を止める（共通ルール「トグルの横幅」）
+          <div className="max-w-xs">
+            <OriginalDropdown
+              value={templateId}
+              onChange={applyTemplate}
+              options={templates.map((t) => ({ value: t.id, label: t.name }))}
+              placeholder="テンプレートから入れる"
+            />
+          </div>
+        )}
         {sectionInputs.map((s, i) => (
           <div key={s.id} className="flex items-center gap-2">
             <span className="w-6 shrink-0 text-right text-[var(--muted)]">{i + 1}.</span>
@@ -136,7 +202,58 @@ export function DeckForm() {
         >
           ＋ 中項目を追加
         </button>
+
+        {saving ? (
+          <div className="ml-8 flex flex-col gap-2 rounded-lg border border-[var(--border)] p-3">
+            <input
+              className={inputClass}
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              maxLength={MAX_TEMPLATE_NAME}
+              placeholder="テンプレート名（例：LT 定番の4項目）"
+              aria-label="テンプレート名"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setSaving(false)}
+                disabled={isSavingTemplate}
+                className="rounded-full border border-[var(--border)] px-4 py-1.5 text-sm transition-transform active:scale-95 disabled:opacity-50"
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={requestSaveTemplate}
+                disabled={isSavingTemplate || templateName.trim() === "" || sections.length === 0}
+                className="rounded-full bg-[var(--accent)] px-4 py-1.5 text-sm text-[var(--accent-foreground)] transition-transform active:scale-95 disabled:opacity-50"
+              >
+                {isSavingTemplate ? "保存中…" : "保存"}
+              </button>
+            </div>
+            {templateError && <p className="text-sm text-red-600">{templateError}</p>}
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="ml-8 w-fit text-sm text-[var(--muted)] underline transition-transform active:scale-95 disabled:opacity-30"
+            onClick={openSaveTemplate}
+            disabled={sections.length === 0}
+          >
+            中項目をテンプレートに保存
+          </button>
+        )}
+        {templateMessage && <p className="ml-8 text-sm text-[var(--muted)]">{templateMessage}</p>}
       </div>
+
+      {confirmingOverwrite && (
+        <ConfirmDialog
+          message={`テンプレート「${templateName.trim()}」はすでにあります。今の中項目で上書きしますか？`}
+          confirmLabel="上書きする"
+          onConfirm={saveTemplate}
+          onCancel={() => setConfirmingOverwrite(false)}
+        />
+      )}
 
       <div className="flex flex-wrap gap-3">
         <button

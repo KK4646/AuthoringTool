@@ -1,4 +1,4 @@
-// 仮の型（0103 の列定義から手書き）。Supabase CLI が入ったら次で生成し直して置き換える:
+// 仮の型（0103・0105 の列定義から手書き）。Supabase CLI が入ったら次で生成し直して置き換える:
 //   supabase gen types typescript --schema slideapp
 
 export type Json =
@@ -37,6 +37,33 @@ export type Database = {
           title?: string;
           subtitle?: string;
           sections?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      templates: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          headings: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string;
+          name: string;
+          headings?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          name?: string;
+          headings?: Json;
           created_at?: string;
           updated_at?: string;
         };
