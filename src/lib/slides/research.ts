@@ -3,7 +3,7 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { BetaMessageParam } from "@anthropic-ai/sdk/resources/beta/messages/messages";
 import { z } from "zod";
 import { loadLayout } from "@/lib/slides/layout";
-import type { Deck, ResearchRequest, Section, Source } from "@/lib/slides/types";
+import type { Deck, Outline, ResearchRequest, Section, Source, Subsection } from "@/lib/slides/types";
 
 // API 料金を抑えるため、調べる部分は Sonnet、箇条書きに整える部分は Haiku を使う（2026-10-08）
 const RESEARCH_MODEL = "claude-sonnet-5-5";
@@ -22,16 +22,16 @@ function createAnthropic() {
   return new Anthropic({ apiKey });
 }
 
-// 中項目1つについてWeb検索し、メモと出典を返す
-async function researchSection(
+// 本文スライド1枚分の話題（例: 中項目「A」、中項目「A」の小項目「B」）についてWeb検索し、メモと出典を返す
+async function researchTopic(
   title: string,
-  section: string,
+  topic: string,
 ): Promise<{ notes: string; sources: Source[] }> {
   const client = createAnthropic();
   const messages: BetaMessageParam[] = [
     {
       role: "user",
-      content: `プレゼン資料「${title}」の中項目「${section}」について、Web検索で調べてください。
+      content: `プレゼン資料「${title}」の${topic}について、Web検索で調べてください。
 スライドに載せるための要点を日本語でまとめてください。
 - 具体的な事実・数値・年を優先し、信頼できる情報源（公的機関・論文・大手報道など）を使う
 - 情報が古い可能性があるものは時点を明記する
@@ -59,7 +59,7 @@ async function researchSection(
   }
 
   if (response.stop_reason === "refusal") {
-    throw new Error(`「${section}」のリサーチがAIに断られました。表現を変えて試してください。`);
+    throw new Error(`${topic}のリサーチがAIに断られました。表現を変えて試してください。`);
   }
 
   // 本文と、本文が引用した出典URLを集める（重複は除く）
@@ -81,7 +81,7 @@ async function researchSection(
 // リサーチのメモを、スライド用の短い箇条書きに整える
 async function toBullets(
   title: string,
-  section: string,
+  topic: string,
   notes: string,
 ): Promise<string[]> {
   const { maxBullets, maxCharsPerBullet } = loadLayout().content;
@@ -95,7 +95,7 @@ async function toBullets(
     messages: [
       {
         role: "user",
-        content: `プレゼン資料「${title}」の中項目「${section}」のスライド本文を作ります。
+        content: `プレゼン資料「${title}」の${topic}のスライド本文を作ります。
 次のリサーチメモをもとに、箇条書きを作ってください。
 - ${maxBullets}項目以内
 - 1項目あたり全角${maxCharsPerBullet}文字以内（スライドの枠に収めるため厳守）
@@ -109,18 +109,31 @@ ${notes}
   });
 
   if (response.stop_reason === "refusal" || !response.parsed_output) {
-    throw new Error(`「${section}」の箇条書きを作れませんでした。もう一度試してください。`);
+    throw new Error(`${topic}の箇条書きを作れませんでした。もう一度試してください。`);
   }
   return response.parsed_output.bullets.slice(0, maxBullets);
 }
 
-async function buildSection(title: string, section: string): Promise<Section> {
-  const { notes, sources } = await researchSection(title, section);
-  const bullets = await toBullets(title, section, notes);
-  return { heading: section, bullets, sources };
+// 本文スライド1枚分を作る（調べる → 箇条書きに整える）
+async function buildSlide(title: string, topic: string, heading: string): Promise<Subsection> {
+  const { notes, sources } = await researchTopic(title, topic);
+  const bullets = await toBullets(title, topic, notes);
+  return { heading, bullets, sources };
 }
 
-// 中項目ごとのリサーチを並行して実行し、スライド全体の内容を作る
+// 中項目1つ分を作る。小項目があれば小項目ごとに調べ、中項目そのものは調べない
+async function buildSection(title: string, outline: Outline): Promise<Section> {
+  const { heading, subheadings } = outline;
+  if (subheadings.length === 0) {
+    return buildSlide(title, `中項目「${heading}」`, heading);
+  }
+  const subsections = await Promise.all(
+    subheadings.map((sub) => buildSlide(title, `中項目「${heading}」の小項目「${sub}」`, sub)),
+  );
+  return { heading, bullets: [], sources: [], subsections };
+}
+
+// 中項目（小項目）ごとのリサーチを並行して実行し、スライド全体の内容を作る
 export async function researchDeck(req: ResearchRequest): Promise<Deck> {
   const sections = await Promise.all(
     req.sections.map((s) => buildSection(req.title, s)),

@@ -70,18 +70,34 @@ export async function buildPptx(
     boxOptions(a.body, font),
   );
 
-  // 中項目ごとの本文スライド
+  // 本文スライド。小項目のある中項目は、区切りのスライドの後に小項目ごとに1枚
   const c = layout.content;
-  for (const section of deck.sections) {
+  const addContentSlide = (heading: string, bullets: string[]) => {
     const slide = pptx.addSlide();
     setBackground(slide, c.background, c.backgroundColor, backgrounds.content);
-    slide.addText(section.heading, boxOptions(c.heading, font));
-    slide.addText(bulletLines(section.bullets), boxOptions(c.body, font));
+    slide.addText(heading, boxOptions(c.heading, font));
+    slide.addText(bulletLines(bullets), boxOptions(c.body, font));
+  };
+  const d = layout.divider;
+  for (const section of deck.sections) {
+    const subsections = section.subsections ?? [];
+    if (subsections.length === 0) {
+      addContentSlide(section.heading, section.bullets);
+      continue;
+    }
+    // 区切りは表紙と同じ背景（アップロード画像も表紙用を使う）
+    const divider = pptx.addSlide();
+    setBackground(divider, d.background, d.backgroundColor, backgrounds.title);
+    divider.addText(section.heading, boxOptions(d.heading, font));
+    for (const sub of subsections) addContentSlide(sub.heading, sub.bullets);
   }
 
   // 出典（多いときは複数枚に分ける）
   const s = layout.sources;
-  const allSources = deck.sections.flatMap((sec) => sec.sources);
+  const allSources = deck.sections.flatMap((sec) => [
+    ...sec.sources,
+    ...(sec.subsections ?? []).flatMap((sub) => sub.sources),
+  ]);
   const unique = [...new Map(allSources.map((src) => [src.url, src])).values()];
   for (let i = 0; i < unique.length; i += s.maxPerSlide) {
     const page = unique.slice(i, i + s.maxPerSlide);

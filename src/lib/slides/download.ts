@@ -33,5 +33,18 @@ export const SAMPLE_DECK: Deck = {
       ],
       sources: [{ title: "出典サイトのタイトル", url: "https://example.com/article" }],
     },
+    {
+      // 小項目のある中項目（区切りのスライド＋小項目ごとの本文）の配置確認用
+      heading: "小項目のある中項目の見出し（区切りのスライド）",
+      bullets: [],
+      sources: [],
+      subsections: [
+        {
+          heading: "小項目の見出しがここに入ります",
+          bullets: ["小項目の箇条書き", "2項目目の箇条書き"],
+          sources: [],
+        },
+      ],
+    },
   ],
 };

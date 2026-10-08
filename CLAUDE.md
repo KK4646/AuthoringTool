@@ -20,14 +20,16 @@ DB（共有Supabase）のルールは ../db-schemas/CLAUDE.md を参照。
 
 ## データモデルの決定事項
 
-- 中項目ごとの中身（見出し・箇条書き・出典）は `decks.sections` (jsonb) に持つ。
-  中項目単位で検索・集計しないため列に分けない。読むときは `parseSections()` で形を確かめる
+- 中項目ごとの中身（見出し・箇条書き・出典、任意で小項目 `subsections`）は `decks.sections` (jsonb) に持つ。
+  中項目単位で検索・集計しないため列に分けない。読むときは `parseSections()` で形を確かめる。
+  `subsections` は後から足した項目なので、無い履歴は小項目なしとして扱う
+- 中項目・小項目の数の上限と本文スライドの合計上限は `src/lib/slides/types.ts` の `MAX_*`（画面とサーバーで共通）
 - 背景画像は設定画面でアップロードしたもの（Storage の `slideapp-backgrounds`、キーは `<user_id>/title` と
   `<user_id>/content`）を優先し、無ければ既定の `public/backgrounds/` を使う。表には持たない
 - 既定の背景画像と文字枠の位置（`config/layout.json`）はアプリ共通。どちらもサーバーで fs から読むので、
   `next.config.ts` の `outputFileTracingIncludes` で Vercel にも同梱している
-- 中項目のテンプレートは `templates` 表（`headings` jsonb）。名前は本人の中で一意で、同じ名前の保存は上書き。
-  読むときは `parseHeadings()` で形を確かめる
+- 中項目のテンプレートは `templates` 表（`headings` jsonb、中身は `[{heading, subheadings}]`）。名前は本人の中で
+  一意で、同じ名前の保存は上書き。読むときは `parseTemplateSections()` で形を確かめる（古い文字列の配列も読む）
 - 箇条書きの数・1項目の文字数の上限は `config/layout.json` の `maxBullets` / `maxCharsPerBullet`。
   AI への指示にも同じ値を使う
 

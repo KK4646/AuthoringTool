@@ -38,6 +38,27 @@ describe("buildPptx", () => {
     expect(slideCount(await buildPptx(deck))).toBe(2 + 2 + 2);
   });
 
+  it("小項目のある中項目は、区切り1枚と小項目ごとの本文を作り、小項目の出典も集める", async () => {
+    const deck: Deck = {
+      title: "テスト",
+      subtitle: "",
+      sections: [
+        { heading: "A", bullets: ["a"], sources: [] },
+        {
+          heading: "B",
+          bullets: [],
+          sources: [],
+          subsections: [
+            { heading: "B1", bullets: ["b1"], sources: [source(1)] },
+            { heading: "B2", bullets: ["b2"], sources: [source(2)] },
+          ],
+        },
+      ],
+    };
+    // 表紙1 + 目次1 + A 1 + B の区切り1 + 小項目2 + 出典1
+    expect(slideCount(await buildPptx(deck))).toBe(7);
+  });
+
   it("アップロードした背景画像を埋め込む", async () => {
     // 1×1 の PNG
     const png =

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { SaveTemplateSchema } from "@/lib/slides/templates";
+import type { Outline } from "@/lib/slides/types";
 
 /**
  * 中項目をテンプレートとして保存する。同じ名前があれば上書きする（上書きの確認は画面側で出す）。
@@ -11,9 +12,9 @@ import { SaveTemplateSchema } from "@/lib/slides/templates";
  */
 export async function saveTemplateAction(
   name: string,
-  headings: string[],
+  sections: Outline[],
 ): Promise<{ error?: string }> {
-  const parsed = SaveTemplateSchema.safeParse({ name, headings });
+  const parsed = SaveTemplateSchema.safeParse({ name, sections });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "入力が不正です。" };
 
   const user = await requireUser();
@@ -22,7 +23,8 @@ export async function saveTemplateAction(
   const { error } = await supabase
     .from("templates")
     .upsert(
-      { user_id: user.id, name: parsed.data.name, headings: parsed.data.headings },
+      // 列名は headings のまま。中身は [{ heading, subheadings }] の形で保存する
+      { user_id: user.id, name: parsed.data.name, headings: parsed.data.sections },
       { onConflict: "user_id,name" },
     );
   if (error) return { error: "テンプレートの保存に失敗しました。" };

@@ -31,6 +31,8 @@ npm test
 | `bold` | 太字にするか |
 | `align` / `valign` | 横（left/center/right）・縦（top/middle/bottom）の揃え |
 
+`divider` は、小項目のある中項目の前に入る区切りのスライド（中項目の見出しだけ。背景は表紙用）。
+
 本文の `maxBullets`（箇条書きの最大数）と `maxCharsPerBullet`（1項目の最大文字数）は AI への指示にも使う。
 `fontFace` は Mac 向けの `Hiragino Sans`。Windows で開くなら `Meiryo` などに変える。
 保存すれば次の生成から反映される（再起動不要）。作成画面の「サンプル文で配置を確認」は API を使わない。

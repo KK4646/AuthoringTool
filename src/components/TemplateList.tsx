@@ -56,7 +56,9 @@ export function TemplateList({ templates }: { templates: Template[] }) {
             <div className="flex min-w-0 flex-1 flex-col">
               <span className="truncate text-sm font-medium">{t.name}</span>
               <span className="truncate text-xs text-[var(--muted)]">
-                {t.headings.join(" / ")}
+                {t.sections
+                  .map((o) => (o.subheadings.length > 0 ? `${o.heading}（小項目${o.subheadings.length}）` : o.heading))
+                  .join(" / ")}
               </span>
             </div>
             {editing && (

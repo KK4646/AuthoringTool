@@ -23,6 +23,8 @@ export type Layout = {
   fontFace: string;
   title: SlideBase & { title: TextBox; subtitle: TextBox };
   agenda: SlideBase & { heading: TextBox; body: TextBox };
+  // 小項目のある中項目の、区切りのスライド（中項目の見出しだけ）
+  divider: SlideBase & { heading: TextBox };
   content: SlideBase & {
     heading: TextBox;
     body: TextBox;

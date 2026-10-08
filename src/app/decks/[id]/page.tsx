@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { DownloadButton } from "@/components/DownloadButton";
 import { jstDateString } from "@/lib/date";
-import { parseSections, type Deck } from "@/lib/slides/types";
+import { parseSections, type Deck, type Subsection } from "@/lib/slides/types";
 
 export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
   const { id } = await params;
@@ -44,28 +44,46 @@ export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
             className="flex flex-col gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4 shadow-[var(--shadow-card)]"
           >
             <h2 className="font-semibold">{s.heading}</h2>
-            <ul className="list-disc space-y-1 pl-5 text-sm">
-              {s.bullets.map((b, j) => (
-                <li key={j}>{b}</li>
-              ))}
-            </ul>
-            {s.sources.length > 0 && (
-              <details className="text-xs text-[var(--muted)]">
-                <summary className="cursor-pointer">出典 {s.sources.length}件</summary>
-                <ul className="mt-1 space-y-1">
-                  {s.sources.map((src) => (
-                    <li key={src.url}>
-                      <a className="underline" href={src.url} target="_blank" rel="noreferrer">
-                        {src.title}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </details>
+            {s.subsections && s.subsections.length > 0 ? (
+              s.subsections.map((sub, j) => (
+                <div key={j} className="flex flex-col gap-2 border-l-2 border-[var(--border)] pl-3">
+                  <h3 className="text-sm font-semibold">{sub.heading}</h3>
+                  <SlideBody slide={sub} />
+                </div>
+              ))
+            ) : (
+              <SlideBody slide={s} />
             )}
           </article>
         ))}
       </div>
     </main>
+  );
+}
+
+// 本文スライド1枚分（箇条書きと出典）
+function SlideBody({ slide }: { slide: Subsection }) {
+  return (
+    <>
+      <ul className="list-disc space-y-1 pl-5 text-sm">
+        {slide.bullets.map((b, j) => (
+          <li key={j}>{b}</li>
+        ))}
+      </ul>
+      {slide.sources.length > 0 && (
+        <details className="text-xs text-[var(--muted)]">
+          <summary className="cursor-pointer">出典 {slide.sources.length}件</summary>
+          <ul className="mt-1 space-y-1">
+            {slide.sources.map((src) => (
+              <li key={src.url}>
+                <a className="underline" href={src.url} target="_blank" rel="noreferrer">
+                  {src.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </>
   );
 }

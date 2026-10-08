@@ -3,7 +3,13 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { downloadPptx, SAMPLE_DECK } from "@/lib/slides/download";
-import { MAX_SECTIONS } from "@/lib/slides/types";
+import {
+  countContentSlides,
+  MAX_CONTENT_SLIDES,
+  MAX_SECTIONS,
+  MAX_SUBSECTIONS,
+  type Outline,
+} from "@/lib/slides/types";
 import { MAX_TEMPLATE_NAME, type Template } from "@/lib/slides/templates";
 import { saveTemplateAction } from "@/app/templates/actions";
 import { OriginalDropdown } from "@/components/OriginalDropdown";
@@ -12,17 +18,21 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 const inputClass =
   "w-full rounded-lg border border-[var(--border-strong)] bg-[var(--background)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]";
 
-type SectionInput = { id: number; text: string };
+type TextInput = { id: number; text: string };
+// 中項目1つ分の入力欄。subs は小項目（任意）
+type SectionInput = TextInput & { subs: TextInput[] };
 
 /**
- * タイトルと中項目を入れてリサーチを始めるフォーム。終わったら履歴の詳細へ移る。
- * 中項目はテンプレートから埋めたり、今の内容をテンプレートとして保存したりできる
+ * タイトルと中項目（任意で小項目）を入れてリサーチを始めるフォーム。終わったら履歴の詳細へ移る。
+ * 中項目・小項目はテンプレートから埋めたり、今の内容をテンプレートとして保存したりできる
  */
 export function DeckForm({ templates }: { templates: Template[] }) {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
-  const [sectionInputs, setSectionInputs] = useState<SectionInput[]>([{ id: 0, text: "" }]);
+  const [sectionInputs, setSectionInputs] = useState<SectionInput[]>([
+    { id: 0, text: "", subs: [] },
+  ]);
   const nextId = useRef(1); // 入力欄ごとの識別番号
   const [loading, setLoading] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -44,11 +54,19 @@ export function DeckForm({ templates }: { templates: Template[] }) {
     return () => clearInterval(id);
   }, [loading]);
 
-  const sections = sectionInputs.map((s) => s.text.trim()).filter(Boolean);
-  const canSubmit = title.trim() !== "" && sections.length > 0 && !loading;
+  // 空欄を除いた中項目・小項目。空欄の中項目の下の小項目も除く
+  const sections: Outline[] = sectionInputs
+    .map((s) => ({
+      heading: s.text.trim(),
+      subheadings: s.subs.map((sub) => sub.text.trim()).filter(Boolean),
+    }))
+    .filter((o) => o.heading !== "");
+  const slideCount = countContentSlides(sections);
+  const tooManySlides = slideCount > MAX_CONTENT_SLIDES;
+  const canSubmit = title.trim() !== "" && sections.length > 0 && !tooManySlides && !loading;
 
   function addSection() {
-    setSectionInputs((list) => [...list, { id: nextId.current++, text: "" }]);
+    setSectionInputs((list) => [...list, { id: nextId.current++, text: "", subs: [] }]);
   }
 
   function removeSection(id: number) {
@@ -59,12 +77,44 @@ export function DeckForm({ templates }: { templates: Template[] }) {
     setSectionInputs((list) => list.map((s) => (s.id === id ? { ...s, text } : s)));
   }
 
-  // テンプレートを選ぶと、中項目をその内容で置き換える
+  function addSub(sectionId: number) {
+    setSectionInputs((list) =>
+      list.map((s) =>
+        s.id === sectionId ? { ...s, subs: [...s.subs, { id: nextId.current++, text: "" }] } : s,
+      ),
+    );
+  }
+
+  function removeSub(sectionId: number, subId: number) {
+    setSectionInputs((list) =>
+      list.map((s) =>
+        s.id === sectionId ? { ...s, subs: s.subs.filter((sub) => sub.id !== subId) } : s,
+      ),
+    );
+  }
+
+  function updateSub(sectionId: number, subId: number, text: string) {
+    setSectionInputs((list) =>
+      list.map((s) =>
+        s.id === sectionId
+          ? { ...s, subs: s.subs.map((sub) => (sub.id === subId ? { ...sub, text } : sub)) }
+          : s,
+      ),
+    );
+  }
+
+  // テンプレートを選ぶと、中項目・小項目をその内容で置き換える
   function applyTemplate(id: string) {
     setTemplateId(id);
     const template = templates.find((t) => t.id === id);
-    if (!template || template.headings.length === 0) return;
-    setSectionInputs(template.headings.map((text) => ({ id: nextId.current++, text })));
+    if (!template || template.sections.length === 0) return;
+    setSectionInputs(
+      template.sections.map((o) => ({
+        id: nextId.current++,
+        text: o.heading,
+        subs: o.subheadings.map((text) => ({ id: nextId.current++, text })),
+      })),
+    );
   }
 
   function openSaveTemplate() {
@@ -163,6 +213,9 @@ export function DeckForm({ templates }: { templates: Template[] }) {
         <span className="font-medium">
           中項目（1つ以上・最大{MAX_SECTIONS}個。1つにつき本文スライド1枚）
         </span>
+        <span className="text-xs text-[var(--muted)]">
+          小項目（任意・1つの中項目につき{MAX_SUBSECTIONS}個まで）を入れると、中項目は区切りのスライドになり、小項目ごとに本文スライドを作ります。
+        </span>
         {templates.length > 0 && (
           // ドロップダウンは既定で全幅なので、親で幅を止める（共通ルール「トグルの横幅」）
           <div className="max-w-xs">
@@ -175,22 +228,53 @@ export function DeckForm({ templates }: { templates: Template[] }) {
           </div>
         )}
         {sectionInputs.map((s, i) => (
-          <div key={s.id} className="flex items-center gap-2">
-            <span className="w-6 shrink-0 text-right text-[var(--muted)]">{i + 1}.</span>
-            <input
-              className={inputClass}
-              value={s.text}
-              onChange={(e) => updateSection(s.id, e.target.value)}
-              placeholder={i === 0 ? "例：太陽光発電の導入量" : "中項目を入力"}
-            />
+          <div key={s.id} className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <span className="w-6 shrink-0 text-right text-[var(--muted)]">{i + 1}.</span>
+              <input
+                className={inputClass}
+                value={s.text}
+                onChange={(e) => updateSection(s.id, e.target.value)}
+                placeholder={i === 0 ? "例：太陽光発電の導入量" : "中項目を入力"}
+              />
+              <button
+                type="button"
+                className="shrink-0 rounded-md border border-[var(--border)] px-2.5 py-1.5 text-xs transition-transform active:scale-95 disabled:opacity-30"
+                onClick={() => removeSection(s.id)}
+                disabled={sectionInputs.length === 1}
+                aria-label={`中項目${i + 1}を取り除く`}
+              >
+                ×
+              </button>
+            </div>
+            {s.subs.map((sub, j) => (
+              <div key={sub.id} className="ml-8 flex items-center gap-2">
+                <span className="w-8 shrink-0 text-right text-xs text-[var(--muted)]">
+                  {i + 1}-{j + 1}
+                </span>
+                <input
+                  className={inputClass}
+                  value={sub.text}
+                  onChange={(e) => updateSub(s.id, sub.id, e.target.value)}
+                  placeholder={j === 0 ? "例：国内の推移" : "小項目を入力"}
+                />
+                <button
+                  type="button"
+                  className="shrink-0 rounded-md border border-[var(--border)] px-2.5 py-1.5 text-xs transition-transform active:scale-95"
+                  onClick={() => removeSub(s.id, sub.id)}
+                  aria-label={`小項目${i + 1}-${j + 1}を取り除く`}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
             <button
               type="button"
-              className="shrink-0 rounded-md border border-[var(--border)] px-2.5 py-1.5 text-xs transition-transform active:scale-95 disabled:opacity-30"
-              onClick={() => removeSection(s.id)}
-              disabled={sectionInputs.length === 1}
-              aria-label={`中項目${i + 1}を取り除く`}
+              className="ml-18 w-fit text-xs text-[var(--muted)] underline transition-transform active:scale-95 disabled:opacity-30"
+              onClick={() => addSub(s.id)}
+              disabled={s.subs.length >= MAX_SUBSECTIONS}
             >
-              ×
+              ＋ 小項目
             </button>
           </div>
         ))}
@@ -273,7 +357,12 @@ export function DeckForm({ templates }: { templates: Template[] }) {
         </button>
       </div>
 
-      {!canSubmit && !loading && (
+      {sections.length > 0 && (
+        <p className={`text-sm ${tooManySlides ? "text-red-600" : "text-[var(--muted)]"}`}>
+          本文スライド {slideCount}枚（上限 {MAX_CONTENT_SLIDES}枚。1枚ごとに Web 検索します）
+        </p>
+      )}
+      {!canSubmit && !loading && !tooManySlides && (
         <p className="text-sm text-[var(--muted)]">
           タイトルと中項目を1つ以上入力すると実行できます。
         </p>

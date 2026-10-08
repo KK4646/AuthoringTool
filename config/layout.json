@@ -12,6 +12,11 @@
     "heading": { "x": 0.8, "y": 0.5, "w": 11.7, "h": 1.0, "fontSize": 32, "color": "1F2A44", "bold": true, "align": "left", "valign": "middle" },
     "body": { "x": 1.0, "y": 1.8, "w": 11.3, "h": 5.0, "fontSize": 24, "color": "333333", "bold": false, "align": "left", "valign": "top" }
   },
+  "divider": {
+    "background": "backgrounds/title.png",
+    "backgroundColor": "1F2A44",
+    "heading": { "x": 0.8, "y": 2.9, "w": 11.7, "h": 1.6, "fontSize": 40, "color": "FFFFFF", "bold": true, "align": "left", "valign": "middle" }
+  },
   "content": {
     "background": "backgrounds/content.png",
     "backgroundColor": "F5F7FB",
