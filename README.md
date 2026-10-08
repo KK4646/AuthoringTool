@@ -11,9 +11,9 @@ npm test
 
 ## 背景画像の差し替え
 
-画像は `public/backgrounds/` に同梱している（16:9。素材の番号つき `01-main-title.png` 〜 `11-bubbles.png`）。
+画像は `public/backgrounds/` に同梱している（1920×1080。素材の番号つき `01-main-title.png` 〜 `05-bubbles.png`）。
 同じ名前で上書きすれば差し替わる。どのスライドにどの画像を使うかは `config/layout.json` の `background`。
-今は表紙＝01、目次＝02、区切り＝03、本文＝06、出典＝04。
+今は表紙＝01、目次＝02、区切り＝03、本文・出典＝04（吹き出しの置き方は 05）。
 画像が無いときは `config/layout.json` の `backgroundColor` で塗る。
 
 ## 文字の位置・色・大きさ（`config/layout.json`）

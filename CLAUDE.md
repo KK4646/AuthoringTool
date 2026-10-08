@@ -26,7 +26,7 @@ DB（共有Supabase）のルールは ../db-schemas/CLAUDE.md を参照。
 - 出典は `decks.sources` (jsonb) に全体で1つの一覧として持つ（0106 から）。古い履歴は `sections` の中に
   出典があるので、出典を出すときは必ず `allSources()` を通す
 - 中項目・小項目の数の上限と本文スライドの合計上限は `src/lib/slides/types.ts` の `MAX_*`（画面とサーバーで共通）
-- 背景画像はアプリに同梱した `public/backgrounds/`（素材の番号つき11ファイル）だけを使う。アップロードは
+- 背景画像はアプリに同梱した `public/backgrounds/`（素材の番号つき5ファイル）だけを使う。アップロードは
   2026-10-08 に外した。Storage のバケット `slideapp-backgrounds`（0104）は残すが使わない
 - 背景画像と文字枠の位置（`config/layout.json`）はアプリ共通。どちらもサーバーで fs から読むので、
   `next.config.ts` の `outputFileTracingIncludes` で Vercel にも同梱している
