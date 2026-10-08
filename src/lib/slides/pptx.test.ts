@@ -74,23 +74,6 @@ describe("buildPptx", () => {
     expect(slideCount(await buildPptx(deck))).toBe(7);
   });
 
-  it("アップロードした背景画像を埋め込む", async () => {
-    // 1×1 の PNG
-    const png =
-      "image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-    const deck: Deck = {
-      title: "テスト",
-      subtitle: "",
-      sources: [],
-      sections: [{ heading: "A", bullets: ["a"], sources: [] }],
-    };
-    const bytes = Buffer.from(png.split(",")[1], "base64");
-    // pptx(zip) は無圧縮で書かれるので、埋め込んだ画像のバイト列がそのまま入る
-    expect((await buildPptx(deck)).includes(bytes)).toBe(false);
-    expect((await buildPptx(deck, { title: png })).includes(bytes)).toBe(true);
-    expect((await buildPptx(deck, { content: png })).includes(bytes)).toBe(true);
-  });
-
   it("出典が無ければ出典スライドは作らない", async () => {
     const deck: Deck = {
       title: "テスト",

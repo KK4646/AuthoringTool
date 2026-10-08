@@ -1,7 +1,6 @@
-import { createClient, getAuthUser } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/server";
 import { buildPptx } from "@/lib/slides/pptx";
 import { DeckSchema } from "@/lib/slides/types";
-import { loadUserBackgrounds } from "@/lib/slides/backgrounds";
 
 export async function POST(request: Request) {
   const user = await getAuthUser();
@@ -14,8 +13,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "スライドの内容が不正です。" }, { status: 400 });
   }
 
-  const backgrounds = await loadUserBackgrounds(await createClient(), user.id);
-  const buffer = await buildPptx(parsed.data, backgrounds);
+  const buffer = await buildPptx(parsed.data);
   return new Response(new Uint8Array(buffer), {
     headers: {
       "Content-Type":

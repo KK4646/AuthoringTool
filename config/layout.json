@@ -1,35 +1,35 @@
 {
   "fontFace": "Noto Sans JP",
   "title": {
-    "background": "backgrounds/title.png",
-    "backgroundColor": "1F2A44",
+    "background": "backgrounds/01-main-title.png",
+    "backgroundColor": "24365A",
     "title": { "x": 0.8, "y": 2.0, "w": 11.7, "h": 1.6, "fontSize": 48, "color": "FFFFFF", "bold": true, "align": "left", "valign": "bottom" },
     "subtitle": { "x": 0.8, "y": 3.92, "w": 11.7, "h": 0.9, "fontSize": 20, "color": "DDE3F0", "bold": true, "align": "left", "valign": "top" }
   },
   "agenda": {
-    "background": "backgrounds/content.png",
-    "backgroundColor": "F5F7FB",
-    "heading": { "x": 0.8, "y": 0.5, "w": 11.7, "h": 1.0, "fontSize": 32, "color": "1F2A44", "bold": true, "align": "left", "valign": "middle" },
-    "body": { "x": 1.0, "y": 1.8, "w": 11.3, "h": 5.0, "fontSize": 24, "color": "333333", "bold": false, "align": "left", "valign": "top" }
+    "background": "backgrounds/02-agenda.png",
+    "backgroundColor": "24365A",
+    "heading": { "x": 0.8, "y": 0.2, "w": 11.7, "h": 0.75, "fontSize": 32, "color": "FFFFFF", "bold": true, "align": "left", "valign": "bottom" },
+    "body": { "x": 1.0, "y": 1.4, "w": 11.3, "h": 5.4, "fontSize": 24, "color": "FFFFFF", "bold": false, "align": "left", "valign": "top" }
   },
   "divider": {
-    "background": "backgrounds/title.png",
-    "backgroundColor": "1F2A44",
-    "heading": { "x": 0.8, "y": 2.9, "w": 11.7, "h": 1.6, "fontSize": 40, "color": "FFFFFF", "bold": true, "align": "left", "valign": "middle" }
+    "background": "backgrounds/03-section.png",
+    "backgroundColor": "24365A",
+    "heading": { "x": 0.8, "y": 2.0, "w": 11.7, "h": 1.6, "fontSize": 40, "color": "FFFFFF", "bold": true, "align": "left", "valign": "bottom" }
   },
   "content": {
-    "background": "backgrounds/content.png",
-    "backgroundColor": "F5F7FB",
-    "heading": { "x": 0.8, "y": 0.5, "w": 11.7, "h": 1.0, "fontSize": 32, "color": "1F2A44", "bold": true, "align": "left", "valign": "middle" },
-    "body": { "x": 1.0, "y": 1.8, "w": 11.3, "h": 5.0, "fontSize": 20, "color": "333333", "bold": false, "align": "left", "valign": "top" },
+    "background": "backgrounds/06-content.png",
+    "backgroundColor": "24365A",
+    "heading": { "x": 0.8, "y": 0.2, "w": 11.7, "h": 0.75, "fontSize": 32, "color": "FFFFFF", "bold": true, "align": "left", "valign": "bottom" },
+    "body": { "x": 1.0, "y": 1.4, "w": 11.3, "h": 5.4, "fontSize": 20, "color": "FFFFFF", "bold": false, "align": "left", "valign": "top" },
     "maxBullets": 5,
     "maxCharsPerBullet": 45
   },
   "sources": {
-    "background": "backgrounds/content.png",
-    "backgroundColor": "F5F7FB",
-    "heading": { "x": 0.8, "y": 0.5, "w": 11.7, "h": 1.0, "fontSize": 32, "color": "1F2A44", "bold": true, "align": "left", "valign": "middle" },
-    "body": { "x": 1.0, "y": 1.8, "w": 11.3, "h": 5.2, "fontSize": 12, "color": "555555", "bold": false, "align": "left", "valign": "top" },
+    "background": "backgrounds/04-title-only.png",
+    "backgroundColor": "24365A",
+    "heading": { "x": 0.8, "y": 0.2, "w": 11.7, "h": 0.75, "fontSize": 32, "color": "FFFFFF", "bold": true, "align": "left", "valign": "bottom" },
+    "body": { "x": 1.0, "y": 1.4, "w": 11.3, "h": 5.6, "fontSize": 12, "color": "DDE3F0", "bold": false, "align": "left", "valign": "top" },
     "maxPerSlide": 12
   }
 }

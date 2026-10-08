@@ -11,11 +11,9 @@ npm test
 
 ## 背景画像の差し替え
 
-設定画面の「背景画像」からアップロードできる（16:9 の PNG / JPEG、5MB まで、例 1920×1080）。
-表紙用と、目次・本文・出典の共通用の2枚。アップロードしていない枠は、次の既定の画像を使う。
-
-既定の画像は `public/backgrounds/` に置く。`title.png` が表紙、`content.png` が目次・本文・出典。
-今の2枚は `node scripts/make-sample-backgrounds.mjs` で作った仮画像（同名で上書きすれば差し替わる）。
+画像は `public/backgrounds/` に同梱している（16:9。素材の番号つき `01-main-title.png` 〜 `11-bubbles.png`）。
+同じ名前で上書きすれば差し替わる。どのスライドにどの画像を使うかは `config/layout.json` の `background`。
+今は表紙＝01、目次＝02、区切り＝03、本文＝06、出典＝04。
 画像が無いときは `config/layout.json` の `backgroundColor` で塗る。
 
 ## 文字の位置・色・大きさ（`config/layout.json`）
@@ -31,7 +29,7 @@ npm test
 | `bold` | 太字にするか |
 | `align` / `valign` | 横（left/center/right）・縦（top/middle/bottom）の揃え |
 
-`divider` は、小項目のある中項目の前に入る区切りのスライド（中項目の見出しだけ。背景は表紙用）。
+`divider` は、小項目のある中項目の前に入る区切りのスライド（中項目の見出しだけ。背景は 03 セクション名）。
 
 本文の `maxBullets`（箇条書きの最大数）と `maxCharsPerBullet`（1項目の最大文字数）は AI への指示にも使う。
 `fontFace` は `Noto Sans JP`（2026-10-08 にユーザーの指定で変更）。開く端末に入っていないと別のフォントで表示される。
