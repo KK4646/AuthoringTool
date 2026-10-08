@@ -5,9 +5,13 @@ import { z } from "zod";
 import { loadLayout } from "@/lib/slides/layout";
 import type { Deck, ResearchRequest, Section, Source } from "@/lib/slides/types";
 
-const MODEL = "claude-opus-5-5";
-// 安全判定で断られた場合に、サーバー側で別モデルへ自動で切り替える設定
+// API 料金を抑えるため、調べる部分は Sonnet、箇条書きに整える部分は Haiku を使う（2026-10-08）
+const RESEARCH_MODEL = "claude-sonnet-5-5";
+const BULLETS_MODEL = "claude-haiku-5-5";
+// 安全判定で断られた場合に、サーバー側で別モデルへ自動で切り替える設定（Haiku には無い）
 const FALLBACK_BETA = "server-side-fallback-2026-07-01";
+// 1つの中項目で Web 検索する上限回数（1回ごとに課金され、結果も入力トークンになる）
+const MAX_SEARCHES = 2;
 // 検索が長引いて一時停止（pause_turn）したときに再開する上限回数
 const MAX_CONTINUATIONS = 3;
 
@@ -31,16 +35,16 @@ async function researchSection(
 スライドに載せるための要点を日本語でまとめてください。
 - 具体的な事実・数値・年を優先し、信頼できる情報源（公的機関・論文・大手報道など）を使う
 - 情報が古い可能性があるものは時点を明記する
-- 箇条書きで、10項目程度まで`,
+- 箇条書きで、5項目程度まで`,
     },
   ];
 
   const send = () =>
     client.beta.messages.create({
-      model: MODEL,
+      model: RESEARCH_MODEL,
       max_tokens: 16000,
-      output_config: { effort: "medium" },
-      tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 4 }],
+      output_config: { effort: "low" },
+      tools: [{ type: "web_search_20260209", name: "web_search", max_uses: MAX_SEARCHES }],
       messages,
       betas: [FALLBACK_BETA],
       fallbacks: "default",
@@ -85,9 +89,9 @@ async function toBullets(
   const client = createAnthropic();
 
   const response = await client.beta.messages.parse({
-    model: MODEL,
+    model: BULLETS_MODEL,
     max_tokens: 16000,
-    output_config: { effort: "medium", format: betaZodOutputFormat(schema) },
+    output_config: { effort: "low", format: betaZodOutputFormat(schema) },
     messages: [
       {
         role: "user",
@@ -102,8 +106,6 @@ ${notes}
 </notes>`,
       },
     ],
-    betas: [FALLBACK_BETA],
-    fallbacks: "default",
   });
 
   if (response.stop_reason === "refusal" || !response.parsed_output) {

@@ -26,7 +26,10 @@
 - リサーチの流れ（`src/lib/slides/research.ts`）
   1. 中項目ごとに並行して、Web 検索ツール付きで Claude に調べさせ、メモと引用元 URL を得る
   2. メモを、`config/layout.json` の上限（項目数・文字数）に収まる箇条書きに整える（構造化出力）
-- モデル: `claude-opus-5-5`（effort `medium`）。`fallbacks: "default"` で断られたときに自動で切り替える
+- モデル（2026-10-08 に API 料金を抑えるため変更。元は両方 `claude-opus-5-5`・effort `medium`・検索4回）
+  - 調べる: `claude-sonnet-5-5`（effort `low`、Web 検索は中項目ごとに最大2回、メモは5項目程度）。
+    `fallbacks: "default"` で断られたときに自動で切り替える
+  - 箇条書きに整える: `claude-haiku-5-5`（effort `low`）。Haiku には断られたときの自動切り替えが無い
 - pptx（`src/lib/slides/pptx.ts`）: 16:9（13.333×7.5 インチ）。文字枠は `config/layout.json`。
   背景は「設定画面でアップロードした画像 → 既定の画像 `public/backgrounds/` → `backgroundColor` で塗る」の順に使う
 - 背景画像のアップロード（`src/lib/slides/backgrounds.ts` / `src/components/BackgroundPicker.tsx`）

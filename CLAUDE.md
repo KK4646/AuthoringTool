@@ -10,7 +10,8 @@ DB（共有Supabase）のルールは ../db-schemas/CLAUDE.md を参照。
 - スキーマ: `slideapp` ／ ポート: `3009`
 - `ANTHROPIC_API_KEY` を使う（サーバー側のみ。`NEXT_PUBLIC_` を付けない）。
   リサーチ・pptx の API はログイン必須
-- モデルは `claude-opus-5-5`。安全判定で断られたときは `fallbacks: "default"` で別モデルに自動で切り替える
+- モデルは調べる部分が `claude-sonnet-5-5`、箇条書きに整える部分が `claude-haiku-5-5`（API 料金を抑えるため。2026-10-08 に Opus 5.5 から変更）。
+  Sonnet は安全判定で断られたとき `fallbacks: "default"` で別モデルに自動で切り替える。Haiku にはこの仕組みが無い
 - `src/lib/database.types.ts` は 0103 から手書きした仮の型（Supabase CLI が未導入のため）。
   列を足したらここも直す。CLI を入れたら `supabase gen types typescript --schema slideapp` で置き換える
 
