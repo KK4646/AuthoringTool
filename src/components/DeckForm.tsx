@@ -273,11 +273,11 @@ export function DeckForm({ templates }: { templates: Template[] }) {
             ))}
             <button
               type="button"
-              className="ml-18 w-fit text-xs text-[var(--muted)] underline transition-transform active:scale-95 disabled:opacity-30"
+              className="ml-18 w-fit rounded-full border border-dashed border-[var(--border-strong)] px-3 py-1 text-xs transition-transform active:scale-95 disabled:opacity-30"
               onClick={() => addSub(s.id)}
               disabled={s.subs.length >= MAX_SUBSECTIONS}
             >
-              ＋ 小項目
+              ＋ 小項目を追加
             </button>
           </div>
         ))}
