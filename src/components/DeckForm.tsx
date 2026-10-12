@@ -200,7 +200,6 @@ export function DeckForm({ templates }: { templates: Template[] }) {
           required
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="例：日本の再生可能エネルギーの現状"
         />
       </label>
 
@@ -210,7 +209,6 @@ export function DeckForm({ templates }: { templates: Template[] }) {
           className={inputClass}
           value={subtitle}
           onChange={(e) => setSubtitle(e.target.value)}
-          placeholder="例：2026年10月 Python基礎 LT"
         />
       </label>
 
@@ -240,7 +238,7 @@ export function DeckForm({ templates }: { templates: Template[] }) {
                 className={inputClass}
                 value={s.text}
                 onChange={(e) => updateSection(s.id, e.target.value)}
-                placeholder={i === 0 ? "例：太陽光発電の導入量" : "中項目を入力"}
+                placeholder="中項目を入力"
               />
               <button
                 type="button"
@@ -261,7 +259,7 @@ export function DeckForm({ templates }: { templates: Template[] }) {
                   className={inputClass}
                   value={sub.text}
                   onChange={(e) => updateSub(s.id, sub.id, e.target.value)}
-                  placeholder={j === 0 ? "例：国内の推移" : "小項目を入力"}
+                  placeholder="小項目を入力"
                 />
                 <button
                   type="button"
@@ -299,7 +297,7 @@ export function DeckForm({ templates }: { templates: Template[] }) {
               value={templateName}
               onChange={(e) => setTemplateName(e.target.value)}
               maxLength={MAX_TEMPLATE_NAME}
-              placeholder="テンプレート名（例：LT 定番の4項目）"
+              placeholder="テンプレート名"
               aria-label="テンプレート名"
             />
             <div className="flex justify-end gap-2">
