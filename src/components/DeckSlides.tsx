@@ -52,6 +52,11 @@ export function DeckSlides({ id, initialDeck }: { id: string; initialDeck: Deck 
       </div>
 
       <div className="flex flex-col gap-3">
+        {/* 2枚目のアジェンダ（中項目の見出しを箇条書きで並べる） */}
+        <article className="flex flex-col gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4 text-sm shadow-[var(--shadow-card)]">
+          <h2 className="text-base font-semibold">アジェンダ</h2>
+          <Bullets items={deck.sections.map((s) => s.heading)} />
+        </article>
         {deck.sections.map((s, i) => (
           <article
             key={i}
