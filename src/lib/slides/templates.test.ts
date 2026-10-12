@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { MAX_TEMPLATE_NAME, parseTemplateSections, SaveTemplateSchema } from "./templates";
-import { MAX_SECTIONS } from "./types";
 
 const outline = (heading: string, subheadings: string[] = []) => ({ heading, subheadings });
 
@@ -19,10 +18,10 @@ describe("SaveTemplateSchema", () => {
     expect(SaveTemplateSchema.safeParse({ name: long, sections: [outline("A")] }).success).toBe(false);
   });
 
-  it("空欄を除いて中項目が0個、または上限超えなら弾く", () => {
+  it("空欄を除いて中項目が0個なら弾き、数が多くても通す", () => {
     expect(SaveTemplateSchema.safeParse({ name: "t", sections: [outline(" ")] }).success).toBe(false);
-    const sections = Array.from({ length: MAX_SECTIONS + 1 }, (_, i) => outline(`項目${i}`));
-    expect(SaveTemplateSchema.safeParse({ name: "t", sections }).success).toBe(false);
+    const sections = Array.from({ length: 50 }, (_, i) => outline(`項目${i}`));
+    expect(SaveTemplateSchema.safeParse({ name: "t", sections }).success).toBe(true);
   });
 });
 

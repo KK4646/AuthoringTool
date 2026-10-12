@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   countContentSlides,
-  MAX_CONTENT_SLIDES,
-  MAX_SECTIONS,
-  MAX_SUBSECTIONS,
   allSources,
   DeckSchema,
   parseSections,
@@ -25,9 +22,9 @@ describe("ResearchRequestSchema", () => {
     expect(blank.success).toBe(false);
   });
 
-  it("中項目が上限を超えたら弾く", () => {
-    const sections = Array.from({ length: MAX_SECTIONS + 1 }, (_, i) => outline(`項目${i}`));
-    expect(ResearchRequestSchema.safeParse({ title: "t", sections }).success).toBe(false);
+  it("中項目の数に上限は無い", () => {
+    const sections = Array.from({ length: 50 }, (_, i) => outline(`項目${i}`));
+    expect(ResearchRequestSchema.safeParse({ title: "t", sections }).success).toBe(true);
   });
 
   it("サブタイトル・小項目は省略でき、前後の空白と空欄の小項目は落とす", () => {
@@ -42,17 +39,10 @@ describe("ResearchRequestSchema", () => {
     });
   });
 
-  it("1つの中項目の小項目が上限を超えたら弾く", () => {
-    const subs = Array.from({ length: MAX_SUBSECTIONS + 1 }, (_, i) => `小${i}`);
-    expect(ResearchRequestSchema.safeParse({ title: "t", sections: [outline("A", subs)] }).success).toBe(false);
-  });
-
-  it("本文スライドの合計が上限を超えたら弾く（小項目のある中項目は小項目の数で数える）", () => {
-    const subs = Array.from({ length: MAX_SUBSECTIONS }, (_, i) => `小${i}`);
-    const full = Array.from({ length: MAX_CONTENT_SLIDES / MAX_SUBSECTIONS }, (_, i) => outline(`中${i}`, subs));
-    expect(ResearchRequestSchema.safeParse({ title: "t", sections: full }).success).toBe(true);
-    const over = [...full, outline("もう1つ")];
-    expect(ResearchRequestSchema.safeParse({ title: "t", sections: over }).success).toBe(false);
+  it("小項目の数・本文スライドの合計に上限は無い", () => {
+    const subs = Array.from({ length: 20 }, (_, i) => `小${i}`);
+    const sections = Array.from({ length: 5 }, (_, i) => outline(`中${i}`, subs));
+    expect(ResearchRequestSchema.safeParse({ title: "t", sections }).success).toBe(true);
   });
 });
 

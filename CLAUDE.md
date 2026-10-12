@@ -25,7 +25,8 @@ DB（共有Supabase）のルールは ../db-schemas/CLAUDE.md を参照。
   `subsections` は後から足した項目なので、無い履歴は小項目なしとして扱う
 - 出典は `decks.sources` (jsonb) に全体で1つの一覧として持つ（0106 から）。古い履歴は `sections` の中に
   出典があるので、出典を出すときは必ず `allSources()` を通す
-- 中項目・小項目の数の上限と本文スライドの合計上限は `src/lib/slides/types.ts` の `MAX_*`（画面とサーバーで共通）
+- 中項目・小項目・本文スライドの枚数に上限は置かない（2026-10-12 に撤廃）。代わりに AI の返事の長さの上限を枚数に合わせて増やす（`research.ts` の `outputTokens()`）。
+  1回の依頼にまとめる形は変えていないので、本番の300秒（`maxDuration`）を超える量では失敗しうる
 - 背景画像はアプリに同梱した `public/backgrounds/`（素材の番号つき5ファイル）だけを使う。アップロードは
   2026-10-08 に外した。Storage のバケット `slideapp-backgrounds`（0104）は残すが使わない
 - 背景画像と文字枠の位置（`config/layout.json`）はアプリ共通。どちらもサーバーで fs から読むので、

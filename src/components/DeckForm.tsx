@@ -5,9 +5,6 @@ import { useRouter } from "next/navigation";
 import { downloadPptx, SAMPLE_DECK } from "@/lib/slides/download";
 import {
   countContentSlides,
-  MAX_CONTENT_SLIDES,
-  MAX_SECTIONS,
-  MAX_SUBSECTIONS,
   type Outline,
 } from "@/lib/slides/types";
 import { MAX_TEMPLATE_NAME, type Template } from "@/lib/slides/templates";
@@ -62,8 +59,7 @@ export function DeckForm({ templates }: { templates: Template[] }) {
     }))
     .filter((o) => o.heading !== "");
   const slideCount = countContentSlides(sections);
-  const tooManySlides = slideCount > MAX_CONTENT_SLIDES;
-  const canSubmit = title.trim() !== "" && sections.length > 0 && !tooManySlides && !loading;
+  const canSubmit = title.trim() !== "" && sections.length > 0 && !loading;
 
   function addSection() {
     setSectionInputs((list) => [...list, { id: nextId.current++, text: "", subs: [] }]);
@@ -214,10 +210,10 @@ export function DeckForm({ templates }: { templates: Template[] }) {
 
       <div className="flex flex-col gap-2 text-sm">
         <span className="font-medium">
-          中項目（1つ以上・最大{MAX_SECTIONS}個。1つにつき本文スライド1枚）
+          中項目（1つ以上。1つにつき本文スライド1枚）
         </span>
         <span className="text-xs text-[var(--muted)]">
-          小項目（任意・1つの中項目につき{MAX_SUBSECTIONS}個まで）を入れると、中項目は区切りのスライドになり、小項目ごとに本文スライドを作ります。
+          小項目（任意）を入れると、中項目は区切りのスライドになり、小項目ごとに本文スライドを作ります。
         </span>
         {templates.length > 0 && (
           // ドロップダウンは既定で全幅なので、親で幅を止める（共通ルール「トグルの横幅」）
@@ -275,7 +271,6 @@ export function DeckForm({ templates }: { templates: Template[] }) {
               type="button"
               className="ml-18 w-fit rounded-full border border-dashed border-[var(--border-strong)] px-3 py-1 text-xs transition-transform active:scale-95 disabled:opacity-30"
               onClick={() => addSub(s.id)}
-              disabled={s.subs.length >= MAX_SUBSECTIONS}
             >
               ＋ 小項目を追加
             </button>
@@ -285,7 +280,6 @@ export function DeckForm({ templates }: { templates: Template[] }) {
           type="button"
           className="ml-8 w-fit rounded-full border border-dashed border-[var(--border-strong)] px-4 py-1.5 text-sm transition-transform active:scale-95 disabled:opacity-30"
           onClick={addSection}
-          disabled={sectionInputs.length >= MAX_SECTIONS}
         >
           ＋ 中項目を追加
         </button>
@@ -361,11 +355,11 @@ export function DeckForm({ templates }: { templates: Template[] }) {
       </div>
 
       {sections.length > 0 && (
-        <p className={`text-sm ${tooManySlides ? "text-red-600" : "text-[var(--muted)]"}`}>
-          本文スライド {slideCount}枚（上限 {MAX_CONTENT_SLIDES}枚）
+        <p className="text-sm text-[var(--muted)]">
+          本文スライド {slideCount}枚
         </p>
       )}
-      {!canSubmit && !loading && !tooManySlides && (
+      {!canSubmit && !loading && (
         <p className="text-sm text-[var(--muted)]">
           タイトルと中項目を1つ以上入力すると実行できます。
         </p>

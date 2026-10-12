@@ -72,12 +72,6 @@ export type Subsection = z.infer<typeof SubsectionSchema>;
 export type Section = z.infer<typeof SectionSchema>;
 export type Deck = z.infer<typeof DeckSchema>;
 
-// 中項目の最大数・1つの中項目の小項目の最大数（画面とサーバーで共通）
-export const MAX_SECTIONS = 10;
-export const MAX_SUBSECTIONS = 5;
-// 本文スライドの合計の上限。リサーチのメモと箇条書きの量を抑え、API 料金と時間を抑えるため
-export const MAX_CONTENT_SLIDES = 20;
-
 // 中項目と小項目の見出しだけの形（作成画面の入力・テンプレート）
 export type Outline = { heading: string; subheadings: string[] };
 
@@ -104,17 +98,10 @@ export const OutlineListSchema = z
       .array(
         z.object({
           heading: z.string(),
-          subheadings: z
-            .array(z.string())
-            .max(MAX_SUBSECTIONS, `小項目は1つの中項目につき${MAX_SUBSECTIONS}個までにしてください`),
+          subheadings: z.array(z.string()),
         }),
       )
-      .min(1, "中項目を1つ以上入力してください")
-      .max(MAX_SECTIONS, `中項目は${MAX_SECTIONS}個までにしてください`)
-      .refine(
-        (list) => countContentSlides(list) <= MAX_CONTENT_SLIDES,
-        `本文スライドは合計${MAX_CONTENT_SLIDES}枚までにしてください（小項目のある中項目は小項目の数で数えます）`,
-      ),
+      .min(1, "中項目を1つ以上入力してください"),
   );
 
 // 画面から送られてくるリサーチ依頼

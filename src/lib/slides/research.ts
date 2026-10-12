@@ -13,6 +13,17 @@ const FALLBACK_BETA = "server-side-fallback-2026-07-01";
 // リサーチ全体で Web 検索する上限回数（1回ごとに課金され、結果も入力トークンになる）。
 // 2026-10-08 にスライドごとの並行リサーチ（1枚2回まで）をやめ、全体で1回の依頼にまとめた
 const MAX_SEARCHES = 5;
+
+// AI の返事の長さの上限。スライドの枚数に合わせて増やし、返事が途中で切れないようにする
+// （1枚あたりの量は目安。モデルの出力上限を超えないよう上で止める）
+const TOKENS_PER_SLIDE = 1500;
+const MIN_OUTPUT_TOKENS = 16000;
+const MAX_OUTPUT_TOKENS = 64000;
+function outputTokens(slideCount: number): number {
+  return Math.min(MAX_OUTPUT_TOKENS, Math.max(MIN_OUTPUT_TOKENS, slideCount * TOKENS_PER_SLIDE));
+}
+// 返事の上限を大きくすると SDK が「長すぎる」と止めるので、待ち時間を明示する（本番の maxDuration と同じ300秒）
+const REQUEST_OPTIONS = { timeout: 300_000 };
 // 検索が長引いて一時停止（pause_turn）したときに再開する上限回数
 const MAX_CONTINUATIONS = 3;
 
@@ -66,13 +77,13 @@ ${numberedTopics(topics)}
   const send = () =>
     client.beta.messages.create({
       model: RESEARCH_MODEL,
-      max_tokens: 16000,
+      max_tokens: outputTokens(topics.length),
       output_config: { effort: "low" },
       tools: [{ type: "web_search_20260209", name: "web_search", max_uses: MAX_SEARCHES }],
       messages,
       betas: [FALLBACK_BETA],
       fallbacks: "default",
-    });
+    }, REQUEST_OPTIONS);
 
   let response = await send();
 
@@ -203,7 +214,7 @@ async function composeSlides(
 
   const response = await client.beta.messages.parse({
     model: BULLETS_MODEL,
-    max_tokens: 16000,
+    max_tokens: outputTokens(topics.length),
     output_config: { effort: "low", format: betaZodOutputFormat(schema) },
     messages: [
       {
@@ -241,7 +252,7 @@ ${notes}
 </notes>`,
       },
     ],
-  });
+  }, REQUEST_OPTIONS);
 
   if (response.stop_reason === "refusal" || !response.parsed_output) {
     throw new Error("スライドの本文を作れませんでした。もう一度試してください。");
