@@ -81,7 +81,7 @@
       "backgroundColor": "24365A",
       "heading": { "x": 0.8, "y": 0.2, "w": 11.7, "h": 0.75, "fontSize": 32, "color": "FFFFFF", "bold": true, "align": "left", "valign": "bottom" },
       "body": { "x": 1.0, "y": 1.3, "w": 11.3, "h": 1.5, "fontSize": 18, "color": "FFFFFF", "bold": false, "align": "left", "valign": "top" },
-      "code": { "x": 0.8, "y": 2.95, "w": 11.7, "h": 3.85, "fontSize": 16, "color": "F5F7FB", "bold": false, "align": "left", "valign": "top", "fontFace": "Consolas", "fill": "3B4F78" }
+      "code": { "x": 0.8, "y": 2.95, "w": 11.7, "h": 3.85, "fontSize": 16, "color": "F5F7FB", "bold": false, "align": "left", "valign": "top", "fontFace": "Consolas", "fill": "000000" }
     }
   },
   "sources": {

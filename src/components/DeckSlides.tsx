@@ -104,7 +104,7 @@ function SlideBody({
         <Bullets items={slide.bullets} />
       )}
       {layout === "code" && slide.code && (
-        <pre className="overflow-x-auto rounded-lg border border-[var(--border)] p-3 font-mono text-xs">
+        <pre className="overflow-x-auto rounded-lg bg-black p-3 font-mono text-xs text-white">
           {slide.code}
         </pre>
       )}

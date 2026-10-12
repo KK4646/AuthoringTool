@@ -55,7 +55,7 @@ export async function buildPptx(deck: Deck): Promise<Buffer> {
   const a = layout.agenda;
   const agenda = pptx.addSlide();
   setBackground(agenda, a.background, a.backgroundColor);
-  agenda.addText("目次", boxOptions(a.heading, font));
+  agenda.addText("アジェンダ", boxOptions(a.heading, font));
   agenda.addText(
     bulletLines(deck.sections.map((s) => s.heading)),
     boxOptions(a.body, font),
