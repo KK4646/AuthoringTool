@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import PptxGenJS from "pptxgenjs";
+import { splitRuns } from "@/lib/slides/emphasis";
 import { loadLayout, type TextBox } from "@/lib/slides/layout";
 import { allSources, type Deck, type Subsection } from "@/lib/slides/types";
 
@@ -30,11 +31,28 @@ function boxOptions(box: TextBox, fontFace: string) {
   };
 }
 
-function bulletLines(lines: string[]) {
-  return lines.map((text) => ({
-    text,
-    options: { bullet: true, breakLine: true, paraSpaceAfter: 8 },
+// 1つの文字列を、[[色|語]] の印で色分けした区切りに変える。色の無い区切りは枠の既定の色で描かれる
+type TextProps = NonNullable<Parameters<Slide["addText"]>[1]>;
+
+function runs(text: string, paragraph: TextProps = {}) {
+  const parts = splitRuns(text);
+  return parts.map((run, i): { text: string; options: TextProps } => ({
+    text: run.text,
+    options: {
+      ...(run.color ? { color: run.color } : {}),
+      // 段落の設定（箇条書き・改行）は最初の区切りにだけ付ける。途中に付けると段落が分かれる
+      ...(i === 0 ? paragraph : {}),
+    },
   }));
+}
+
+function bulletLines(lines: string[]) {
+  return lines.flatMap((text) => {
+    const parts = runs(text, { bullet: true, paraSpaceAfter: 8 });
+    // 改行は1項目の最後の区切りに付ける
+    parts[parts.length - 1].options = { ...parts[parts.length - 1].options, breakLine: true };
+    return parts;
+  });
 }
 
 export async function buildPptx(deck: Deck): Promise<Buffer> {
@@ -77,7 +95,7 @@ export async function buildPptx(deck: Deck): Promise<Buffer> {
       [c.code, content.code],
     ];
     for (const [box, text] of texts) {
-      if (box && text) slide.addText(text, boxOptions(box, font));
+      if (box && text) slide.addText(runs(text), boxOptions(box, font));
     }
     // 1段の置き方は body、2段の置き方は left に、同じ bullets を書く
     const lists: [TextBox | undefined, string[] | undefined][] = [

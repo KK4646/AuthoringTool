@@ -35,10 +35,12 @@ DB（共有Supabase）のルールは ../db-schemas/CLAUDE.md を参照。
   一意で、同じ名前の保存は上書き。読むときは `parseTemplateSections()` で形を確かめる（古い文字列の配列も読む）
 - 箇条書きの数・1項目の文字数の上限は `config/layout.json` の `maxBullets` / `maxCharsPerBullet`。
   AI への指示にも同じ値を使う
+- 文字の色（強調）は本文の文字列の中に `[[色|語]]` の印として持つ（`src/lib/slides/emphasis.ts`）。列は足さない。
+  文字を画面に出す・pptx に書くときは必ず `splitRuns()` を通す（印が文字として出てしまうため）
 
 ## 対象外
 
-箇条書きの手直し画面／スライド枚数の自動調整
+スライド枚数の自動調整（箇条書きの手直し画面は 2026-10-21 に入れた）
 
 <!-- BEGIN:nextjs-agent-rules -->
 

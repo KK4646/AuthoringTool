@@ -98,6 +98,30 @@ describe("buildPptx", () => {
     expect(buf.includes(Buffer.from('typeface="Consolas"'))).toBe(true);
   });
 
+  it("[[色|語]] の印は外し、その部分だけ色を付ける", async () => {
+    const deck: Deck = {
+      title: "テスト",
+      subtitle: "",
+      sources: [],
+      sections: [
+        {
+          heading: "A",
+          layout: "content-with-caption",
+          bullets: ["前半は[[yellow|大事]]です", "印なし"],
+          caption: "説明も[[red|赤く]]",
+          sources: [],
+        },
+      ],
+    };
+    const buf = await buildPptx(deck);
+    const has = (text: string) => buf.includes(Buffer.from(text));
+    expect(has("[[yellow|")).toBe(false);
+    expect(has('<a:srgbClr val="FFD966"/>')).toBe(true);
+    expect(has('<a:srgbClr val="FF8A80"/>')).toBe(true);
+    expect(has("大事")).toBe(true);
+    expect(has("赤く")).toBe(true);
+  });
+
   it("出典が無ければ出典スライドは作らない", async () => {
     const deck: Deck = {
       title: "テスト",
