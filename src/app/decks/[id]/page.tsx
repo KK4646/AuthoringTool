@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { DeckSlides } from "@/components/DeckSlides";
 import { jstDateString } from "@/lib/date";
+import { loadLayout } from "@/lib/slides/layout";
 import { allSources, parseSections, parseSources, type Deck } from "@/lib/slides/types";
 
 export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
@@ -37,7 +38,7 @@ export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
         <p className="text-xs text-[var(--muted)]">{jstDateString(row.created_at)} 作成</p>
       </header>
 
-      <DeckSlides id={id} initialDeck={deck} />
+      <DeckSlides id={id} initialDeck={deck} layout={loadLayout()} />
 
       {sources.length > 0 && (
         <details className="text-xs text-[var(--muted)]">

@@ -1,0 +1,118 @@
+import type { ContentLayout, Layout, TextBox } from "@/lib/slides/layout";
+import { allSources, type Deck, type Subsection } from "@/lib/slides/types";
+
+// 本文スライドの文字枠のキー（config/layout.json の layouts.<置き方> のキーと同じ）
+export type BoxKey =
+  | "heading"
+  | "body"
+  | "left"
+  | "right"
+  | "leftLabel"
+  | "rightLabel"
+  | "caption"
+  | "bubbleLarge"
+  | "bubbleSmall"
+  | "code";
+
+// 1枚のスライドに置く文字。list は箇条書き（1要素が1項目。出典の一覧は点なし）、text は1つの文
+export type SlideItem =
+  | { key: BoxKey | "title" | "subtitle"; box: TextBox; kind: "text"; text: string }
+  | { key: BoxKey; box: TextBox; kind: "list"; lines: string[]; bullet: boolean };
+
+export type RenderedSlide = {
+  background: string; // public/ からの相対パス
+  backgroundColor: string;
+  items: SlideItem[];
+  // 本文スライドなら、どの中項目（i）・小項目（j）か。編集と置き方の変更はこれで対象を探す
+  source?: { i: number; j?: number };
+};
+
+// 本文スライド1枚分の文字枠と中身の対応。pptx もプレビューもこれを描く。
+// includeEmpty を付けると中身が空の枠も返す（編集画面で空の枠に書き込めるようにするため）
+export function contentSlideItems(c: ContentLayout, content: Subsection, includeEmpty = false): SlideItem[] {
+  const texts: [BoxKey, TextBox | undefined, string | undefined][] = [
+    ["heading", c.heading, content.heading],
+    ["leftLabel", c.leftLabel, content.leftLabel],
+    ["rightLabel", c.rightLabel, content.rightLabel],
+    ["caption", c.caption, content.caption],
+    ["bubbleLarge", c.bubbleLarge, content.bubbles?.[0]],
+    ["bubbleSmall", c.bubbleSmall, content.bubbles?.[1]],
+    ["code", c.code, content.code],
+  ];
+  // 1段の置き方は body、2段の置き方は left に、同じ bullets を書く
+  const lists: [BoxKey, TextBox | undefined, string[] | undefined][] = [
+    ["body", c.body, content.bullets],
+    ["left", c.left, content.bullets],
+    ["right", c.right, content.right],
+  ];
+  return [
+    ...texts.flatMap(([key, box, text]) =>
+      box && (text || includeEmpty) ? [{ key, box, kind: "text" as const, text: text ?? "" }] : [],
+    ),
+    ...lists.flatMap(([key, box, lines]) =>
+      box && ((lines && lines.length > 0) || includeEmpty)
+        ? [{ key, box, kind: "list" as const, lines: lines ?? [], bullet: true }]
+        : [],
+    ),
+  ];
+}
+
+// スライド全体を、1枚ずつの「背景＋文字」の並びにする（表紙 → 目次 → 本文 → 出典）
+export function renderDeck(deck: Deck, layout: Layout): RenderedSlide[] {
+  const slides: RenderedSlide[] = [];
+
+  const t = layout.title;
+  slides.push({
+    background: t.background,
+    backgroundColor: t.backgroundColor,
+    items: [
+      { key: "title", box: t.title, kind: "text", text: deck.title },
+      ...(deck.subtitle ? [{ key: "subtitle" as const, box: t.subtitle, kind: "text" as const, text: deck.subtitle }] : []),
+    ],
+  });
+
+  const a = layout.agenda;
+  slides.push({
+    background: a.background,
+    backgroundColor: a.backgroundColor,
+    items: [
+      { key: "heading", box: a.heading, kind: "text", text: "アジェンダ" },
+      { key: "body", box: a.body, kind: "list", lines: deck.sections.map((s) => s.heading), bullet: true },
+    ],
+  });
+
+  const contentSlide = (content: Subsection, source: RenderedSlide["source"]): RenderedSlide => {
+    const c = layout.layouts[content.layout ?? "content"];
+    return { background: c.background, backgroundColor: c.backgroundColor, items: contentSlideItems(c, content), source };
+  };
+  const d = layout.divider;
+  deck.sections.forEach((section, i) => {
+    const subsections = section.subsections ?? [];
+    if (subsections.length === 0) {
+      slides.push(contentSlide(section, { i }));
+      return;
+    }
+    slides.push({
+      background: d.background,
+      backgroundColor: d.backgroundColor,
+      items: [{ key: "heading", box: d.heading, kind: "text", text: section.heading }],
+    });
+    subsections.forEach((sub, j) => slides.push(contentSlide(sub, { i, j })));
+  });
+
+  // 出典（多いときは複数枚に分ける）
+  const s = layout.sources;
+  const unique = allSources(deck);
+  for (let i = 0; i < unique.length; i += s.maxPerSlide) {
+    const page = unique.slice(i, i + s.maxPerSlide);
+    slides.push({
+      background: s.background,
+      backgroundColor: s.backgroundColor,
+      items: [
+        { key: "heading", box: s.heading, kind: "text", text: i === 0 ? "出典" : "出典（続き）" },
+        { key: "body", box: s.body, kind: "list", lines: page.map((src) => `${src.title}\n${src.url}`), bullet: false },
+      ],
+    });
+  }
+  return slides;
+}

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Zen_Maru_Gothic, Quicksand } from "next/font/google";
+import { Zen_Maru_Gothic, Quicksand, Noto_Sans_JP } from "next/font/google";
 import { BottomTabBar } from "@/components/BottomTabBar";
 import { getAuthUser } from "@/lib/supabase/server";
 import { DEFAULT_ACCENT_COLOR } from "@/lib/colors";
@@ -17,6 +17,13 @@ const quicksand = Quicksand({
   weight: ["400", "500", "600", "700"],
 });
 
+// スライドのプレビュー用（pptx と同じフォント。config/layout.json の fontFace）
+const notoSansJp = Noto_Sans_JP({
+  variable: "--font-noto-sans-jp",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+});
+
 export const metadata: Metadata = {
   title: "スライドメーカー",
   description: "テーマと中項目からWeb検索して、背景画像に合わせたpptxを作る",
@@ -32,7 +39,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ja"
-      className={`${zenMaruGothic.variable} ${quicksand.variable} h-full antialiased`}
+      className={`${zenMaruGothic.variable} ${quicksand.variable} ${notoSansJp.variable} h-full antialiased`}
       // テーマカラーはブルーで固定（設定画面では選ばない。../CLAUDE.md の「既知の差異」）
       style={{ "--accent": DEFAULT_ACCENT_COLOR } as React.CSSProperties}
     >

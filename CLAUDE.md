@@ -37,6 +37,8 @@ DB（共有Supabase）のルールは ../db-schemas/CLAUDE.md を参照。
   AI への指示にも同じ値を使う
 - 文字の色（強調）は本文の文字列の中に `[[色|語]]` の印として持つ（`src/lib/slides/emphasis.ts`）。列は足さない。
   文字を画面に出す・pptx に書くときは必ず `splitRuns()` を通す（印が文字として出てしまうため）
+- スライドの「枠と中身」は `renderDeck()`（`src/lib/slides/render.ts`）が正本。pptx（`pptx.ts`）と詳細画面の
+  プレビュー（`SlidePreview`）はどちらもこれを描くので、枠を足すときは render.ts を直す
 
 ## 対象外
 

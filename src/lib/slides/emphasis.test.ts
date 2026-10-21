@@ -5,7 +5,7 @@ describe("splitRuns", () => {
   it("印の部分だけ色が付く", () => {
     expect(splitRuns("Aは[[yellow|重要]]です")).toEqual([
       { text: "Aは" },
-      { text: "重要", color: "FFD966" },
+      { text: "重要", color: "FFD966", key: "yellow" },
       { text: "です" },
     ]);
   });
@@ -18,9 +18,9 @@ describe("splitRuns", () => {
   });
   it("複数の印と、先頭・末尾の印", () => {
     expect(splitRuns("[[red|a]]b[[blue|c]]")).toEqual([
-      { text: "a", color: "FF8A80" },
+      { text: "a", color: "FF8A80", key: "red" },
       { text: "b" },
-      { text: "c", color: "8EC9FF" },
+      { text: "c", color: "8EC9FF", key: "blue" },
     ]);
   });
 });

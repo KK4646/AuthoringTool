@@ -3,9 +3,11 @@ import path from "node:path";
 import PptxGenJS from "pptxgenjs";
 import { splitRuns } from "@/lib/slides/emphasis";
 import { loadLayout, type TextBox } from "@/lib/slides/layout";
-import { allSources, type Deck, type Subsection } from "@/lib/slides/types";
+import { renderDeck } from "@/lib/slides/render";
+import type { Deck } from "@/lib/slides/types";
 
 type Slide = ReturnType<PptxGenJS["addSlide"]>;
+type TextProps = NonNullable<Parameters<Slide["addText"]>[1]>;
 
 // 背景画像（アプリに同梱した public/ の画像）を敷く。ファイルが無ければ設定の背景色で塗る
 function setBackground(slide: Slide, imagePath: string, color: string) {
@@ -14,7 +16,7 @@ function setBackground(slide: Slide, imagePath: string, color: string) {
 }
 
 // 設定ファイルの文字枠の値を pptxgenjs のオプションに変換する
-function boxOptions(box: TextBox, fontFace: string) {
+function boxOptions(box: TextBox, fontFace: string): TextProps {
   return {
     x: box.x,
     y: box.y,
@@ -32,8 +34,6 @@ function boxOptions(box: TextBox, fontFace: string) {
 }
 
 // 1つの文字列を、[[色|語]] の印で色分けした区切りに変える。色の無い区切りは枠の既定の色で描かれる
-type TextProps = NonNullable<Parameters<Slide["addText"]>[1]>;
-
 function runs(text: string, paragraph: TextProps = {}) {
   const parts = splitRuns(text);
   return parts.map((run, i): { text: string; options: TextProps } => ({
@@ -46,9 +46,10 @@ function runs(text: string, paragraph: TextProps = {}) {
   }));
 }
 
-function bulletLines(lines: string[]) {
+// 箇条書き。出典の一覧は点なしの段落にする
+function listLines(lines: string[], bullet: boolean) {
   return lines.flatMap((text) => {
-    const parts = runs(text, { bullet: true, paraSpaceAfter: 8 });
+    const parts = runs(text, bullet ? { bullet: true, paraSpaceAfter: 8 } : { paraSpaceAfter: 4 });
     // 改行は1項目の最後の区切りに付ける
     parts[parts.length - 1].options = { ...parts[parts.length - 1].options, breakLine: true };
     return parts;
@@ -62,79 +63,13 @@ export async function buildPptx(deck: Deck): Promise<Buffer> {
   pptx.layout = "LAYOUT_WIDE"; // 16:9（13.333 × 7.5 インチ）
   pptx.title = deck.title;
 
-  // 表紙
-  const t = layout.title;
-  const cover = pptx.addSlide();
-  setBackground(cover, t.background, t.backgroundColor);
-  cover.addText(deck.title, boxOptions(t.title, font));
-  if (deck.subtitle) cover.addText(deck.subtitle, boxOptions(t.subtitle, font));
-
-  // 目次
-  const a = layout.agenda;
-  const agenda = pptx.addSlide();
-  setBackground(agenda, a.background, a.backgroundColor);
-  agenda.addText("アジェンダ", boxOptions(a.heading, font));
-  agenda.addText(
-    bulletLines(deck.sections.map((s) => s.heading)),
-    boxOptions(a.body, font),
-  );
-
-  // 本文スライド。置き方（layout）の設定にある枠だけに書く。小項目のある中項目は、
-  // 区切りのスライドの後に小項目ごとに1枚
-  const addContentSlide = (content: Subsection) => {
-    const c = layout.layouts[content.layout ?? "content"];
+  for (const r of renderDeck(deck, layout)) {
     const slide = pptx.addSlide();
-    setBackground(slide, c.background, c.backgroundColor);
-    const texts: [TextBox | undefined, string | undefined][] = [
-      [c.heading, content.heading],
-      [c.leftLabel, content.leftLabel],
-      [c.rightLabel, content.rightLabel],
-      [c.caption, content.caption],
-      [c.bubbleLarge, content.bubbles?.[0]],
-      [c.bubbleSmall, content.bubbles?.[1]],
-      [c.code, content.code],
-    ];
-    for (const [box, text] of texts) {
-      if (box && text) slide.addText(runs(text), boxOptions(box, font));
+    setBackground(slide, r.background, r.backgroundColor);
+    for (const item of r.items) {
+      if (item.kind === "text") slide.addText(runs(item.text), boxOptions(item.box, font));
+      else slide.addText(listLines(item.lines, item.bullet), boxOptions(item.box, font));
     }
-    // 1段の置き方は body、2段の置き方は left に、同じ bullets を書く
-    const lists: [TextBox | undefined, string[] | undefined][] = [
-      [c.body, content.bullets],
-      [c.left, content.bullets],
-      [c.right, content.right],
-    ];
-    for (const [box, lines] of lists) {
-      if (box && lines && lines.length > 0) slide.addText(bulletLines(lines), boxOptions(box, font));
-    }
-  };
-  const d = layout.divider;
-  for (const section of deck.sections) {
-    const subsections = section.subsections ?? [];
-    if (subsections.length === 0) {
-      addContentSlide(section);
-      continue;
-    }
-    const divider = pptx.addSlide();
-    setBackground(divider, d.background, d.backgroundColor);
-    divider.addText(section.heading, boxOptions(d.heading, font));
-    for (const sub of subsections) addContentSlide(sub);
-  }
-
-  // 出典（多いときは複数枚に分ける）
-  const s = layout.sources;
-  const unique = allSources(deck);
-  for (let i = 0; i < unique.length; i += s.maxPerSlide) {
-    const page = unique.slice(i, i + s.maxPerSlide);
-    const slide = pptx.addSlide();
-    setBackground(slide, s.background, s.backgroundColor);
-    slide.addText(i === 0 ? "出典" : "出典（続き）", boxOptions(s.heading, font));
-    slide.addText(
-      page.map((src) => ({
-        text: `${src.title}\n${src.url}`,
-        options: { breakLine: true, paraSpaceAfter: 4 },
-      })),
-      boxOptions(s.body, font),
-    );
   }
 
   return (await pptx.write({ outputType: "nodebuffer" })) as Buffer;

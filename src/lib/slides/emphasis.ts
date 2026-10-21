@@ -11,8 +11,8 @@ export const EMPHASIS_COLORS = [
 
 export type EmphasisKey = (typeof EMPHASIS_COLORS)[number]["key"];
 
-// 文字列の一部分。color が無ければ枠の既定の色で描く
-export type TextRun = { text: string; color?: string };
+// 文字列の一部分。color（16進）が無ければ枠の既定の色で描く。key はその色の名前（画面の編集で使う）
+export type TextRun = { text: string; color?: string; key?: EmphasisKey };
 
 const KEYS = EMPHASIS_COLORS.map((c) => c.key).join("|");
 // [[yellow|語]] の形。知らない色の名前は印として扱わず、そのまま文字として残す
@@ -29,7 +29,7 @@ export function splitRuns(text: string): TextRun[] {
   for (const m of text.matchAll(MARK)) {
     const index = m.index ?? 0;
     if (index > last) runs.push({ text: text.slice(last, index) });
-    if (m[2]) runs.push({ text: m[2], color: hexOf(m[1] as EmphasisKey) });
+    if (m[2]) runs.push({ text: m[2], color: hexOf(m[1] as EmphasisKey), key: m[1] as EmphasisKey });
     last = index + m[0].length;
   }
   if (last < text.length) runs.push({ text: text.slice(last) });
