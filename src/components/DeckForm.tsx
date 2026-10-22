@@ -231,6 +231,14 @@ export function DeckForm({ templates }: { templates: Template[] }) {
                 onChange={(e) => updateSection(s.id, e.target.value)}
                 placeholder="中項目を入力"
               />
+              {/* 小項目の追加は中項目の行に置く（下に点線のボタンを並べるより迷わないため） */}
+              <button
+                type="button"
+                className="shrink-0 rounded-md border border-[var(--border)] px-2.5 py-1.5 text-xs transition-transform active:scale-95"
+                onClick={() => addSub(s.id)}
+              >
+                ＋小項目
+              </button>
               <button
                 type="button"
                 className="shrink-0 rounded-md border border-[var(--border)] px-2.5 py-1.5 text-xs transition-transform active:scale-95 disabled:opacity-30"
@@ -262,18 +270,11 @@ export function DeckForm({ templates }: { templates: Template[] }) {
                 </button>
               </div>
             ))}
-            <button
-              type="button"
-              className="ml-18 w-fit rounded-full border border-dashed border-[var(--border-strong)] px-3 py-1 text-xs transition-transform active:scale-95 disabled:opacity-30"
-              onClick={() => addSub(s.id)}
-            >
-              ＋ 小項目を追加
-            </button>
           </div>
         ))}
         <button
           type="button"
-          className="ml-8 w-fit rounded-full border border-dashed border-[var(--border-strong)] px-4 py-1.5 text-sm transition-transform active:scale-95 disabled:opacity-30"
+          className="ml-8 rounded-lg border border-[var(--border)] py-2 text-sm transition-transform hover:border-[var(--accent)] active:scale-[0.98]"
           onClick={addSection}
         >
           ＋ 中項目を追加
