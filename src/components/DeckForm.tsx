@@ -209,12 +209,7 @@ export function DeckForm({ templates }: { templates: Template[] }) {
       </label>
 
       <div className="flex flex-col gap-2 text-sm">
-        <span className="font-medium">
-          中項目（1つ以上。1つにつき本文スライド1枚）
-        </span>
-        <span className="text-xs text-[var(--muted)]">
-          小項目（任意）を入れると、中項目は区切りのスライドになり、小項目ごとに本文スライドを作ります。
-        </span>
+        <span className="font-medium">中項目</span>
         {templates.length > 0 && (
           // ドロップダウンは既定で全幅なので、親で幅を止める（共通ルール「トグルの横幅」）
           <div className="max-w-xs">
