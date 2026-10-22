@@ -76,7 +76,8 @@ function offsetIn(parent: HTMLElement, node: Text): number {
 }
 
 // 今の選択範囲（root の中にあるもの）に色を付ける。key が無ければ外す。色を付けたら true。
-// 複数行にまたがる選択でも行の形を保つため、文字ノードごとに選ばれた部分だけを切り出して扱う
+// 複数行にまたがる選択でも行の形を保つため、文字ノードごとに選ばれた部分だけを切り出して扱う。
+// 付け外しのあとも同じ範囲を選んだままにする（別の色にしたい・やっぱり戻したいときに選び直さなくて済むように）
 export function colorSelection(root: HTMLElement, key?: EmphasisKey): boolean {
   const sel = window.getSelection();
   if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return false;
@@ -88,7 +89,7 @@ export function colorSelection(root: HTMLElement, key?: EmphasisKey): boolean {
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     if (range.intersectsNode(node)) targets.push(node as Text);
   }
-  let changed = false;
+  const replaced: Node[] = [];
   for (const node of targets) {
     const start = node === range.startContainer ? range.startOffset : 0;
     const end = node === range.endContainer ? range.endOffset : node.length;
@@ -97,9 +98,20 @@ export function colorSelection(root: HTMLElement, key?: EmphasisKey): boolean {
     const mid = start > 0 ? node.splitText(start) : node;
     if (end - start < mid.length) mid.splitText(end - start);
     liftOut(mid);
-    if (key) mid.replaceWith(colorSpan(key, mid.data));
-    changed = true;
+    if (key) {
+      const span = colorSpan(key, mid.data);
+      mid.replaceWith(span);
+      replaced.push(span);
+    } else {
+      replaced.push(mid);
+    }
   }
-  if (changed) sel.removeAllRanges();
-  return changed;
+  if (replaced.length === 0) return false;
+  // 置き換えたノードの先頭から末尾までを選び直す
+  const next = document.createRange();
+  next.setStartBefore(replaced[0]);
+  next.setEndAfter(replaced[replaced.length - 1]);
+  sel.removeAllRanges();
+  sel.addRange(next);
+  return true;
 }
