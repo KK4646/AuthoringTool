@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { DeckSlides } from "@/components/DeckSlides";
+import { SourceList } from "@/components/SourceList";
 import { jstDateString } from "@/lib/date";
 import { loadLayout } from "@/lib/slides/layout";
 import { allSources, parseSections, parseSources, type Deck } from "@/lib/slides/types";
@@ -29,7 +30,10 @@ export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
 
   return (
     <main className="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 py-6">
-      <Link href="/decks" className="w-fit text-sm text-[var(--muted)] underline">
+      <Link
+        href="/decks"
+        className="w-fit rounded-lg border border-[var(--border)] px-3 py-1 text-xs transition-transform hover:border-[var(--accent)] active:scale-95"
+      >
         ← 履歴へ
       </Link>
       <header className="flex flex-col gap-1">
@@ -40,20 +44,7 @@ export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
 
       <DeckSlides id={id} initialDeck={deck} layout={loadLayout()} />
 
-      {sources.length > 0 && (
-        <details className="text-xs text-[var(--muted)]">
-          <summary className="cursor-pointer">出典 {sources.length}件</summary>
-          <ul className="mt-1 space-y-1">
-            {sources.map((src) => (
-              <li key={src.url}>
-                <a className="underline" href={src.url} target="_blank" rel="noreferrer">
-                  {src.title}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
+      {sources.length > 0 && <SourceList sources={sources} />}
     </main>
   );
 }

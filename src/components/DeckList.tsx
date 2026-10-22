@@ -47,14 +47,18 @@ export function DeckList({ decks }: { decks: DeckSummary[] }) {
             key={d.id}
             className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2"
           >
-            <Link
-              href={`/decks/${d.id}`}
-              className="flex min-w-0 flex-1 flex-col transition-transform active:scale-[0.98]"
-            >
+            <div className="flex min-w-0 flex-1 flex-col">
               <span className="truncate text-sm font-medium">{d.title}</span>
               <span className="text-xs text-[var(--muted)]">
                 {d.createdLabel}・中項目 {d.sectionCount}件
               </span>
+            </div>
+            {/* 文字を押して開く形にはしない（画面移動はボタンで行う。2026-10-22 ユーザーの指示） */}
+            <Link
+              href={`/decks/${d.id}`}
+              className="shrink-0 rounded-lg border border-[var(--border)] px-3 py-1 text-xs transition-transform hover:border-[var(--accent)] active:scale-95"
+            >
+              開く
             </Link>
             {editing && (
               <button

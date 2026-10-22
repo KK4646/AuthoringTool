@@ -317,7 +317,7 @@ export function DeckForm({ templates }: { templates: Template[] }) {
         ) : (
           <button
             type="button"
-            className="ml-8 w-fit text-sm text-[var(--muted)] underline transition-transform active:scale-95 disabled:opacity-30"
+            className="ml-8 w-fit rounded-full border border-[var(--border)] px-4 py-1.5 text-sm transition-transform active:scale-95 disabled:opacity-30"
             onClick={openSaveTemplate}
             disabled={sections.length === 0}
           >
