@@ -47,7 +47,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <div
           className={
             user
-              ? "flex flex-1 flex-col md:mx-auto md:w-full md:max-w-5xl md:flex-row md:items-start"
+              ? "flex flex-1 flex-col md:mx-auto md:w-full md:max-w-3xl md:flex-row md:items-start"
               : "flex flex-1 flex-col"
           }
         >

@@ -29,7 +29,7 @@ export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
   const sources = allSources(deck);
 
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 py-6">
+    <main className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-6">
       <Link
         href="/decks"
         className="w-fit rounded-lg border border-[var(--border)] px-3 py-1 text-xs transition-transform hover:border-[var(--accent)] active:scale-95"

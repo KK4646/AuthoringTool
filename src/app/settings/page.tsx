@@ -9,7 +9,7 @@ export default async function SettingsPage() {
   const templates = await listTemplates(supabase);
 
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-col gap-8 px-4 py-6">
+    <main className="mx-auto flex w-full max-w-md flex-col gap-8 px-4 py-6">
       <h1 className="text-xl font-bold">設定</h1>
 
       <section className="flex flex-col gap-3">
