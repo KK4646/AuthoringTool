@@ -359,11 +359,6 @@ export function DeckForm({ templates }: { templates: Template[] }) {
           本文スライド {slideCount}枚
         </p>
       )}
-      {!canSubmit && !loading && (
-        <p className="text-sm text-[var(--muted)]">
-          タイトルと中項目を1つ以上入力すると実行できます。
-        </p>
-      )}
       {loading && (
         <p className="text-sm text-[var(--muted)]">
           中項目ごとに並行して検索しています。数分かかることがあります。

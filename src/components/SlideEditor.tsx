@@ -65,7 +65,6 @@ export function SlideEditor({
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-xs text-[var(--muted)]">枠の中の文字を直せます。色を付けたい文字を選んでから色を押す</p>
       <div className="flex flex-wrap items-center gap-2">
         {EMPHASIS_COLORS.map((c) => (
           <button
