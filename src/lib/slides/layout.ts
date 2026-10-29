@@ -61,6 +61,8 @@ export type Layout = {
     maxCodeBullets: number;
     maxCodeLines: number;
     maxCodeLineChars: number;
+    maxComboCodeLines: number; // 箇条書き＋コード＋図解のコードの行数
+    maxComboCodeLineChars: number;
     maxDiagramNodes: number;
     maxDiagramNodeChars: number;
   };

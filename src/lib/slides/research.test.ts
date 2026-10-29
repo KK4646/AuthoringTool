@@ -49,7 +49,7 @@ describe("normalizeSlide", () => {
     code: "",
     diagram: "",
   };
-  const limits = { maxBullets: 5, maxCodeBullets: 2, maxCodeLines: 3 };
+  const limits = { maxBullets: 5, maxCodeBullets: 2, maxCodeLines: 3, maxComboCodeLines: 2 };
 
   it("置き方で使う項目だけを残し、前後の空白と空の項目を落とし、上限で切る", () => {
     expect(
@@ -95,7 +95,7 @@ describe("normalizeSlide（コード）", () => {
     code: "",
     diagram: "",
   };
-  const limits = { maxBullets: 5, maxCodeBullets: 2, maxCodeLines: 3 };
+  const limits = { maxBullets: 5, maxCodeBullets: 2, maxCodeLines: 3, maxComboCodeLines: 2 };
 
   it("字下げを保ち、前後の空行と行末の空白を落とし、行数と箇条書きを上限で切る", () => {
     const code = "\n\nif (x > 0) {   \n  total += x;\n}\nlog(total);\n\n";
@@ -123,7 +123,7 @@ describe("normalizeSlide（図解）", () => {
     code: "",
     diagram: "\n flowchart LR\n  A --> B \n",
   };
-  const limits = { maxBullets: 5, maxCodeBullets: 2, maxCodeLines: 3 };
+  const limits = { maxBullets: 5, maxCodeBullets: 2, maxCodeLines: 3, maxComboCodeLines: 2 };
 
   it("記法の前後の空白を落とし、箇条書きを上限で切る", () => {
     expect(normalizeSlide(raw, limits)).toEqual({ layout: "diagram", bullets: ["a", "b"], diagram: "flowchart LR\n  A --> B" });
@@ -135,6 +135,18 @@ describe("normalizeSlide（図解）", () => {
       bullets: ["a", "b", "c"],
       diagram: "flowchart LR\n  A --> B",
     });
+  });
+
+  it("箇条書き＋コード＋図解はコードを短く切り、コードか図が無ければある方の置き方にする", () => {
+    const combo = { ...raw, layout: "content-code-diagram" as const, code: "a = 1\nb = 2\nc = 3" };
+    expect(normalizeSlide(combo, limits)).toEqual({
+      layout: "content-code-diagram",
+      bullets: ["a", "b"],
+      code: "a = 1\nb = 2",
+      diagram: "flowchart LR\n  A --> B",
+    });
+    expect(normalizeSlide({ ...combo, code: "" }, limits).layout).toBe("content-diagram");
+    expect(normalizeSlide({ ...combo, diagram: "" }, limits).layout).toBe("code");
   });
 
   it("記法が空なら1つのコンテンツにする", () => {

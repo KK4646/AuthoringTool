@@ -126,6 +126,7 @@ export const AI_LAYOUTS = [
   "code",
   "diagram",
   "content-diagram",
+  "content-code-diagram",
 ] as const;
 type AiLayout = (typeof AI_LAYOUTS)[number];
 
@@ -143,7 +144,7 @@ type ComposedSlide = {
 };
 
 // normalizeSlide で切りそろえる上限（config/layout.json の content）
-type SlideLimits = { maxBullets: number; maxCodeBullets: number; maxCodeLines: number };
+type SlideLimits = { maxBullets: number; maxCodeBullets: number; maxCodeLines: number; maxComboCodeLines: number };
 
 // 本文スライドの見出し・出典以外の中身
 export type SlideBody = Omit<Subsection, "heading" | "sources">;
@@ -196,6 +197,15 @@ export function normalizeSlide(raw: ComposedSlide, limits: SlideLimits): SlideBo
     case "content-diagram":
       if (diagram) return { layout: "content-diagram", bullets, diagram };
       break;
+    case "content-code-diagram": {
+      // コードか図の片方しか無ければ、ある方だけの置き方にする
+      const short = code.split("\n").slice(0, limits.maxComboCodeLines).join("\n");
+      const few = bullets.slice(0, limits.maxCodeBullets);
+      if (code && diagram) return { layout: "content-code-diagram", bullets: few, code: short, diagram };
+      if (diagram) return { layout: "content-diagram", bullets, diagram };
+      if (code) return { layout: "code", bullets: few, code };
+      break;
+    }
   }
   return { layout: "content", bullets: [...bullets, ...right].slice(0, maxBullets) };
 }
@@ -242,9 +252,10 @@ number はスライド番号です。全${topics.length}枚すべてについて
 置き方の選び方（内容に合うものを選ぶ。迷ったら content）
 - 後から手で直さなくて済むよう、次に当てはまるスライドは必ずその置き方にする
   - プログラミング・コマンド・設定ファイルなど、具体的な書き方を見せられる話題 → code
+    （処理の流れや変化も図で見せられるなら content-code-diagram）
   - 手順・流れ・仕組み・原因と結果・時系列の変化など、段階やつながりを図で見せられる話題 → diagram か content-diagram
     （図の補足に要点を並べたいときは content-diagram）
-  - ただし code・diagram・content-diagram を合わせて全体の半分までにする
+  - ただし code・diagram・content-diagram・content-code-diagram を合わせて全体の半分までにする
 - content: 見出し＋箇条書き1段。bullets に${limits.maxBullets}項目以内、1項目全角${limits.maxCharsPerBullet}文字以内
 - two-content: 2つのまとまりを左右2段で並べる。bullets（左）と right（右）にそれぞれ${limits.maxBullets}項目以内、
   1項目全角${limits.maxCharsPerColumnBullet}文字以内
@@ -261,7 +272,10 @@ number はスライド番号です。全${topics.length}枚すべてについて
   bullets に${limits.maxCodeBullets}項目以内の短い説明（1項目全角${limits.maxCharsPerColumnBullet}文字以内）、diagram に図の記法
 - content-diagram: 左に要点の箇条書き、右に図。bullets に${limits.maxBullets}項目以内、1項目全角${limits.maxCharsPerColumnBullet}文字以内、
   diagram に図の記法（右の枠は縦長に近いので、flowchart なら TD にする）
-- 図の記法（diagram と content-diagram の diagram）は Mermaid。内容に最も合う種類を次から選ぶ
+- content-code-diagram: プログラミングの話題で、仕組みの図と実際のコードの両方があると分かりやすいもの。左上に要点、左下にコード、右に図。
+  bullets に${limits.maxCodeBullets}項目以内（1項目全角${limits.maxCharsPerColumnBullet}文字以内）、
+  code に図と同じ内容を表す短いコード（${limits.maxComboCodeLines}行以内・1行半角${limits.maxComboCodeLineChars}文字以内）、diagram に図の記法
+- 図の記法（diagram・content-diagram・content-code-diagram の diagram）は Mermaid。内容に最も合う種類を次から選ぶ
   - 手順・流れ・仕組み・原因と結果 → flowchart（1行目は "flowchart TD" か "flowchart LR"）。ノードは A["文字"] のように必ず "" で囲む。
     矢印の文字は付けないか短く（A -->|文字| B の形）。一直線に並ぶノードは6個まで（LR なら4個まで）にし、それより多い流れは
     段階をまとめる（長すぎると図が小さくなるため）

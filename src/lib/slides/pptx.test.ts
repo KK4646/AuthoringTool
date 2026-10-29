@@ -77,7 +77,7 @@ describe("buildPptx", () => {
 
   it("サンプルは置き方ごとに1枚ずつ本文を作る", async () => {
     // 表紙1 + 目次1 + 本文8（置き方8種類）+ 区切り1 + 小項目1 + 出典1
-    expect(slideCount(await buildPptx(SAMPLE_DECK))).toBe(15);
+    expect(slideCount(await buildPptx(SAMPLE_DECK))).toBe(16);
   });
 
   it("置き方の枠にある項目だけを書く（1段の置き方では右の段を書かない）", async () => {

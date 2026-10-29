@@ -114,6 +114,14 @@ export const SAMPLE_DECK: Deck = {
       sources: [],
     },
     {
+      heading: "箇条書き＋コード＋図解：見出し",
+      layout: "content-code-diagram",
+      bullets: ["文字列を整数に変換", "計算して文字列に戻す"],
+      code: 'n = int("42")\nn = n + 1\ns = str(n)',
+      diagram: 'flowchart TD\n  A["文字列 42"] -->|int| B["整数 42"] -->|+1| C["整数 43"] -->|str| D["文字列 43"]',
+      sources: [],
+    },
+    {
       // 小項目のある中項目（区切りのスライド＋小項目ごとの本文）の配置確認用
       heading: "小項目のある中項目の見出し（区切りのスライド）",
       bullets: [],

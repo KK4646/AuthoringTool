@@ -50,9 +50,30 @@ export function flexDiagramLayout(c: ContentLayout, content: Subsection): Conten
   if (!text || !diagram || diagram.x <= text.x) return c;
   // 点と字下げ・枠の内側の余白の分（約0.8インチ）を足す。足りないと最後の1文字だけ折り返す
   const longest = Math.max(0, ...content.bullets.map((b) => textWidth(b, text.fontSize))) + 0.8;
-  const w = Math.min(FLEX_TEXT_MAX, Math.max(FLEX_TEXT_MIN, longest));
+  // 左の段の下にコード枠がある置き方（箇条書き＋コード＋図解）は、コードの一番長い行（行番号の分も足す）も収まる幅にする
+  const code = c.code && c.code.x === text.x ? c.code : undefined;
+  const codeWidth = code
+    ? Math.max(0, ...(content.code ?? "").split("\n").map((line) => ((line.length + 4) * 0.6 * code.fontSize) / 72)) +
+      (code.inset ?? 0.1) * 2
+    : 0;
+  const w = Math.min(FLEX_TEXT_MAX, Math.max(FLEX_TEXT_MIN, longest, codeWidth));
   const x = text.x + w + FLEX_GAP;
-  return { ...c, [key]: { ...text, w }, diagram: { ...diagram, x, w: SLIDE_RIGHT - x } };
+  // コード枠は箇条書きのすぐ下に、行数に合わせた高さで置く（中身より大きい黒い枠が残らないように）。
+  // 1行の高さは文字の大きさの1.25倍、箇条書きは項目の間の 8pt も足して見積もる
+  const bulletsH = (content.bullets.length * (text.fontSize * 1.25 + 8)) / 72 + 0.2;
+  const codeLines = (content.code ?? "").split("\n").length;
+  const codeBox = code && {
+    ...code,
+    w,
+    y: Math.min(text.y + bulletsH + 0.25, code.y),
+    h: Math.min(code.h + code.y - text.y - bulletsH - 0.25, (codeLines * code.fontSize * 1.25) / 72 + (code.inset ?? 0.1) * 2),
+  };
+  return {
+    ...c,
+    [key]: { ...text, w, h: code ? bulletsH : text.h },
+    ...(codeBox ? { code: codeBox } : {}),
+    diagram: { ...diagram, x, w: SLIDE_RIGHT - x },
+  };
 }
 
 // 本文スライド1枚分の文字枠と中身の対応。pptx もプレビューもこれを描く。

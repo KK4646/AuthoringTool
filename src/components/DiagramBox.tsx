@@ -143,22 +143,23 @@ function drawSideLabels(svg: string, sides: SideLabel[]): string {
     path.setAttribute("marker-end", "url(#side-arrow)");
     root.appendChild(path);
     const text = doc.createElementNS(SVG_NS, "text");
-    text.setAttribute("x", String(x + SIDE_TEXT_GAP));
     text.setAttribute("y", String((a.cy + b.cy) / 2));
-    text.setAttribute("dominant-baseline", "middle");
+    text.setAttribute("dominant-baseline", "central");
+    text.setAttribute("text-anchor", "middle"); // 札の中央にそろえる
     text.setAttribute("fill", "#F5F7FB");
     text.setAttribute("font-size", String(SIDE_FONT));
     text.setAttribute("font-family", "Noto Sans JP, sans-serif");
     text.setAttribute("font-weight", "700");
     text.textContent = side.text;
-    // 文字の幅は全角1文字＝文字の大きさとして見積もる。文字の下に丸い札を敷いて目立たせる
-    const textW = [...side.text].length * SIDE_FONT;
+    // 文字の幅は全角1文字＝文字の大きさ、半角はその6割として見積もる。文字の下に丸い札を敷いて目立たせる
+    const textW = [...side.text].reduce((n, ch) => n + (ch.charCodeAt(0) < 0x2000 ? 0.62 : 1), 0) * SIDE_FONT;
     const pill = doc.createElementNS(SVG_NS, "rect");
     pill.setAttribute("x", String(x + SIDE_TEXT_GAP - 10));
     pill.setAttribute("y", String((a.cy + b.cy) / 2 - SIDE_FONT * 0.85));
     pill.setAttribute("width", String(textW + 20));
     pill.setAttribute("height", String(SIDE_FONT * 1.7));
-    pill.setAttribute("rx", String(SIDE_FONT * 0.85));
+    pill.setAttribute("rx", String(SIDE_FONT * 1.7 * 0.25)); // 角の丸みは高さの25%まで
+    text.setAttribute("x", String(x + SIDE_TEXT_GAP + textW / 2));
     pill.setAttribute("fill", "rgba(169, 196, 238, 0.22)");
     root.appendChild(pill);
     root.appendChild(text);
