@@ -45,6 +45,7 @@ const THEME_CSS = `
   .flowchart-link, .messageLine0, .messageLine1 { stroke: ${ARROW_COLOR} !important; stroke-width: 3.5px !important; stroke-linecap: round; }
   .marker, marker path, .arrowheadPath { fill: ${ARROW_COLOR} !important; stroke: ${ARROW_COLOR} !important; }
   .node rect, .node polygon, .node circle, .actor { rx: 10px; ry: 10px; stroke-width: 2px !important; }
+  text, tspan, .nodeLabel { font-weight: 700 !important; }
   .edgeLabel text, .edgeLabel tspan, .edgeLabel .label text { fill: #F5F7FB !important; }
   .edgeLabel rect, .labelBkg { fill: ${SLIDE_BG} !important; opacity: 1 !important; }
 `;
@@ -54,10 +55,11 @@ const THEME_CSS = `
 // カギ形の矢印を描いて、その右に文字を置く
 type SideLabel = { from: string; to: string; text: string };
 
-const SIDE_GAP = 18; // 箱の右端からカギ形の縦線まで
+const SIDE_GAP = 40; // 箱の右端からカギ形の縦線まで
 const SIDE_TEXT_GAP = 10; // カギ形の縦線から文字まで
 const SIDE_FONT = 22;
-const SIDE_SHIFT = 7;
+const SIDE_SHIFT = 0.28; // 箱の高さに対する、中央からのずれ
+const SIDE_RADIUS = 8; // カギ形の角の丸み
 
 // 矢印の文字を外した記法にする（"A -->|文字| B" → "A --> B"）
 function takeEdgeLabels(code: string): { code: string; count: number } {
@@ -106,7 +108,8 @@ function nodeBox(doc: Document, id: string) {
   const shape = node?.querySelector("rect, polygon, path, circle");
   if (!node || !m || !shape) return null;
   const width = Number(shape.getAttribute("width") ?? 0) || 120;
-  return { cx: Number(m[1]), cy: Number(m[2]), right: Number(m[1]) + width / 2 };
+  const height = Number(shape.getAttribute("height") ?? 0) || 50;
+  return { cx: Number(m[1]), cy: Number(m[2]), right: Number(m[1]) + width / 2, h: height };
 }
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -127,8 +130,11 @@ function drawSideLabels(svg: string, sides: SideLabel[]): string {
     if (!a || !b) continue;
     const x = Math.max(a.right, b.right) + SIDE_GAP;
     const path = doc.createElementNS(SVG_NS, "path");
-    // 出る位置は箱の中央より少し下、入る位置は少し上にずらす（続けて並ぶカギ形の線がつながって見えないように）
-    path.setAttribute("d", `M${a.right + 4},${a.cy + SIDE_SHIFT} H${x} V${b.cy - SIDE_SHIFT} H${b.right + 4}`);
+    // 出る位置は箱の下寄り、入る位置は上寄りにする。続けて並ぶカギ形が1本につながって見えないよう、
+    // 同じ箱に入る線と出る線の間をあける
+    const y1 = a.cy + a.h * SIDE_SHIFT;
+    const y2 = b.cy - b.h * SIDE_SHIFT;
+    path.setAttribute("d", `M${a.right + 2},${y1} H${x - SIDE_RADIUS} Q${x},${y1} ${x},${y1 + SIDE_RADIUS} V${y2 - SIDE_RADIUS} Q${x},${y2} ${x - SIDE_RADIUS},${y2} H${b.right + 5}`);
     path.setAttribute("fill", "none");
     path.setAttribute("stroke", ARROW_COLOR);
     path.setAttribute("stroke-width", "3.5");
@@ -143,6 +149,7 @@ function drawSideLabels(svg: string, sides: SideLabel[]): string {
     text.setAttribute("fill", "#F5F7FB");
     text.setAttribute("font-size", String(SIDE_FONT));
     text.setAttribute("font-family", "Noto Sans JP, sans-serif");
+    text.setAttribute("font-weight", "700");
     text.textContent = side.text;
     // 文字の幅は全角1文字＝文字の大きさとして見積もる。文字の下に丸い札を敷いて目立たせる
     const textW = [...side.text].length * SIDE_FONT;
