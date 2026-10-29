@@ -34,7 +34,7 @@ export type RenderedSlide = {
 const FLEX_TEXT_MIN = 3.0;
 const FLEX_TEXT_MAX = 7.0;
 const FLEX_GAP = 0.3; // 左の段と図の間
-const SLIDE_RIGHT = 12.5; // 図の右端
+const SLIDE_RIGHT = 13.0; // 図の右端（スライドの幅は 13.333。端の飾りにかからない程度まで寄せる）
 
 // 1行の文字の幅（インチ）。全角は文字の大きさより少し広め、半角はその6割として見積もる
 function textWidth(text: string, fontSize: number): number {
