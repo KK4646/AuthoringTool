@@ -16,7 +16,7 @@ const PASTELS = ["#DCE8FA", "#DDF3EA", "#FBE8D8", "#EDE3F7", "#FAF1C9", "#F7DDE6
 const THEME_VARIABLES = {
   background: "transparent",
   fontFamily: "Noto Sans JP, sans-serif",
-  fontSize: "20px",
+  fontSize: "26px",
   primaryColor: PASTELS[0],
   primaryTextColor: "#1F2A44",
   primaryBorderColor: "#9DB9E6",
@@ -44,6 +44,28 @@ const THEME_CSS = `
   .edgeLabel rect, .labelBkg { fill: ${SLIDE_BG} !important; opacity: 1 !important; }
 `;
 
+// 上から下へ流れる図で、矢印の上の文字を矢印の左に移す（文字が線に重ならず、図の幅も細く保てる。
+// 2026-10-29 ユーザーの手描きの指示）。図の左端が広がる分、viewBox も左へ広げる
+const LABEL_GAP = 12; // 矢印と文字の間（SVG の単位）
+function labelsBesideArrows(svg: string): string {
+  const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
+  const root = doc.documentElement;
+  const [vx, vy, vw, vh] = (root.getAttribute("viewBox") ?? "0 0 1 1").split(/[\s,]+/).map(Number);
+  let minX = vx;
+  doc.querySelectorAll("g.edgeLabel").forEach((label) => {
+    const rect = label.querySelector("rect.background");
+    const width = Number(rect?.getAttribute("width") ?? 0);
+    const m = label.getAttribute("transform")?.match(/translate\(\s*([-\d.]+)[,\s]+([-\d.]+)\s*\)/);
+    if (!m || width === 0) return;
+    const x = Number(m[1]) - width / 2 - LABEL_GAP;
+    label.setAttribute("transform", `translate(${x}, ${m[2]})`);
+    rect?.setAttribute("style", "display:none"); // 線の上ではなくなったので下地は要らない
+    minX = Math.min(minX, x - width / 2 - 4);
+  });
+  root.setAttribute("viewBox", `${minX} ${vy} ${vw + (vx - minX)} ${vh}`);
+  return new XMLSerializer().serializeToString(root);
+}
+
 // mermaid は大きいので、図解のスライドを描くときだけ読み込む
 async function renderOnce(code: string): Promise<{ svg: string; w: number; h: number }> {
   const mermaid = (await import("mermaid")).default;
@@ -54,9 +76,10 @@ async function renderOnce(code: string): Promise<{ svg: string; w: number; h: nu
     htmlLabels: false,
     themeVariables: THEME_VARIABLES,
     themeCSS: THEME_CSS,
-    flowchart: { curve: "basis", nodeSpacing: 40, rankSpacing: 50, padding: 16 },
+    flowchart: { curve: "basis", nodeSpacing: 40, rankSpacing: 40, padding: 20 },
   });
-  const { svg } = await mermaid.render(`diagram-${++renderCount}`, code);
+  const rendered = (await mermaid.render(`diagram-${++renderCount}`, code)).svg;
+  const svg = /^\s*(flowchart|graph)\s+(TD|TB)\b/.test(code) ? labelsBesideArrows(rendered) : rendered;
   const [, , w, h] = (svg.match(/viewBox="([^"]+)"/)?.[1] ?? "0 0 1 1").split(/[\s,]+/).map(Number);
   return { svg, w, h };
 }

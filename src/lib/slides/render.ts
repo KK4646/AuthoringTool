@@ -1,4 +1,5 @@
 import type { ContentLayout, Layout, TextBox } from "@/lib/slides/layout";
+import { splitRuns } from "@/lib/slides/emphasis";
 import { allSources, type Deck, type Subsection } from "@/lib/slides/types";
 
 // 本文スライドの文字枠のキー（config/layout.json の layouts.<置き方> のキーと同じ）
@@ -28,9 +29,36 @@ export type RenderedSlide = {
   source?: { i: number; j?: number };
 };
 
+// 左に箇条書き・右に図の置き方で、左の段の幅を文の長さに合わせて変える（図のせいで文が途中で折り返さないように。
+// 2026-10-29 ユーザーの指示）。図は残りの幅を使う。左の段はこの範囲（インチ）に収める
+const FLEX_TEXT_MIN = 3.0;
+const FLEX_TEXT_MAX = 7.0;
+const FLEX_GAP = 0.3; // 左の段と図の間
+const SLIDE_RIGHT = 12.5; // 図の右端
+
+// 1行の文字の幅（インチ）。全角は文字の大きさより少し広め、半角はその6割として見積もる
+function textWidth(text: string, fontSize: number): number {
+  const plain = splitRuns(text).map((r) => r.text).join("");
+  const em = [...plain].reduce((n, ch) => n + (ch.charCodeAt(0) < 0x2000 ? 0.6 : 1.05), 0);
+  return (em * fontSize) / 72;
+}
+
+export function flexDiagramLayout(c: ContentLayout, content: Subsection): ContentLayout {
+  const key = c.left ? "left" : "body";
+  const text = c[key];
+  const diagram = c.diagram;
+  if (!text || !diagram || diagram.x <= text.x) return c;
+  // 点と字下げ・枠の内側の余白の分（約0.8インチ）を足す。足りないと最後の1文字だけ折り返す
+  const longest = Math.max(0, ...content.bullets.map((b) => textWidth(b, text.fontSize))) + 0.8;
+  const w = Math.min(FLEX_TEXT_MAX, Math.max(FLEX_TEXT_MIN, longest));
+  const x = text.x + w + FLEX_GAP;
+  return { ...c, [key]: { ...text, w }, diagram: { ...diagram, x, w: SLIDE_RIGHT - x } };
+}
+
 // 本文スライド1枚分の文字枠と中身の対応。pptx もプレビューもこれを描く。
 // includeEmpty を付けると中身が空の枠も返す（編集画面で空の枠に書き込めるようにするため）
-export function contentSlideItems(c: ContentLayout, content: Subsection, includeEmpty = false): SlideItem[] {
+export function contentSlideItems(layoutDef: ContentLayout, content: Subsection, includeEmpty = false): SlideItem[] {
+  const c = flexDiagramLayout(layoutDef, content);
   const texts: [BoxKey, TextBox | undefined, string | undefined][] = [
     ["heading", c.heading, content.heading],
     ["leftLabel", c.leftLabel, content.leftLabel],

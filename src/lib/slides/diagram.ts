@@ -11,7 +11,7 @@ export const DIAGRAM_BUCKET = "slideapp-diagrams";
 export const DIAGRAM_PX_PER_INCH = 200;
 
 // 図の見た目（DiagramBox の配色など）を変えたら上げる。古い見た目の画像を使わず描き直させるため
-const DIAGRAM_STYLE_VERSION = 2;
+const DIAGRAM_STYLE_VERSION = 4;
 
 // 図1枚を見分ける文字列。画像は枠の縦横比で作るので、同じ記法でも枠の大きさが違えば別の画像にする
 export function diagramKey(code: string, box: TextBox): string {

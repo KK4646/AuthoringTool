@@ -160,6 +160,9 @@
       - 中身は見出し＋短い説明（箇条書き）＋ `diagram`（Mermaid の記法）。背景は 04。AI には flowchart だけを書かせる
       - 2026-10-29 に、図を上下の帯で横に並べる形をやめ、左に短い説明・右に上から下の大きな図にした（横で小さくなるため。
         ユーザーの指示）。flowchart は TD で書かせる
+      - 矢印の上の文字は矢印の左に出す（線に重ねない。ユーザーの手描きの図に合わせた）
+      - 左の段の幅は箇条書きの一番長い文に合わせて 3〜7 インチで変え、図は残りの幅を使う（`render.ts` の `flexDiagramLayout`。
+        図のせいで文が途中で折り返さないように）
         （ノード数・文字数の上限は `config/layout.json` の `maxDiagramNodes` / `maxDiagramNodeChars`）
       - 図はブラウザで描く（`DiagramBox`。mermaid は図解のスライドを描くときだけ読み込む）。描いた図は枠と同じ縦横比の
         PNG にして、Storage の非公開バケット `slideapp-diagrams`（0120）の `<user_id>/<記法の SHA-256>.png` に保存する
