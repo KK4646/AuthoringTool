@@ -52,34 +52,107 @@ export function flexDiagramLayout(c: ContentLayout, content: Subsection): Conten
   const longest = Math.max(0, ...content.bullets.map((b) => textWidth(b, text.fontSize))) + 0.8;
   // 左の段の下にコード枠がある置き方（箇条書き＋コード＋図解）は、コードの一番長い行（行番号の分も足す）も収まる幅にする
   const code = c.code && c.code.x === text.x ? c.code : undefined;
-  const codeWidth = code
-    ? Math.max(0, ...(content.code ?? "").split("\n").map((line) => ((line.length + 4) * 0.6 * code.fontSize) / 72)) +
-      (code.inset ?? 0.1) * 2
-    : 0;
+  const codeWidth = code ? codeTextWidth(content.code ?? "", code) : 0;
   const w = Math.min(FLEX_TEXT_MAX, Math.max(FLEX_TEXT_MIN, longest, codeWidth));
   const x = text.x + w + FLEX_GAP;
-  // コード枠は箇条書きのすぐ下に、行数に合わせた高さで置く（中身より大きい黒い枠が残らないように）。
-  // 1行の高さは文字の大きさの1.25倍、箇条書きは項目の間の 8pt も足して見積もる
-  const bulletsH = (content.bullets.length * (text.fontSize * 1.25 + 8)) / 72 + 0.2;
-  const codeLines = (content.code ?? "").split("\n").length;
-  const codeBox = code && {
-    ...code,
-    w,
-    y: Math.min(text.y + bulletsH + 0.25, code.y),
-    h: Math.min(code.h + code.y - text.y - bulletsH - 0.25, (codeLines * code.fontSize * 1.25) / 72 + (code.inset ?? 0.1) * 2),
-  };
   return {
     ...c,
-    [key]: { ...text, w, h: code ? bulletsH : text.h },
-    ...(codeBox ? { code: codeBox } : {}),
+    [key]: { ...text, w },
+    ...(code ? { code: { ...code, w } } : {}),
     diagram: { ...diagram, x, w: SLIDE_RIGHT - x },
+  };
+}
+
+// 箇条書き n 項目の高さ（インチ）。1行は文字の大きさの1.25倍、項目の間に 8pt、枠の上下の余白 0.2
+const listHeight = (n: number, fontSize: number) => (n * (fontSize * 1.25 + 8)) / 72 + 0.2;
+// コードの一番長い行の幅（インチ）。等幅の半角は文字の大きさの6割、行番号の4文字分と枠の内側の余白も足す
+const codeTextWidth = (code: string, box: TextBox) =>
+  Math.max(0, ...code.split("\n").map((line) => ((line.length + 4) * 0.6 * box.fontSize) / 72)) + (box.inset ?? 0.1) * 2;
+
+// 文字の大きさは、設定の大きさからこの倍率まで、枠に収まる範囲で大きくする（中身が少ないと下が大きく空くため。
+// 2026-10-29 ユーザーの指示）。見出し・図は変えない
+const GROW_MAX = 1.4;
+const GROW_MAX_PT = 30;
+
+// 箇条書きの文字を、どの項目も1行に収まり、全項目が枠の高さに収まる最大の大きさにする。
+// 2段の置き方は左右で同じ大きさにそろえる。図のある置き方は左の段の幅を文に合わせているので変えない
+function growLists(c: ContentLayout, content: Subsection): ContentLayout {
+  if (c.diagram) return c;
+  const lists: ["body" | "left" | "right", string[]][] = [
+    ["body", content.bullets],
+    ["left", content.bullets],
+    ["right", content.right ?? []],
+  ];
+  let scale = Infinity;
+  for (const [key, lines] of lists) {
+    const box = c[key];
+    if (!box || lines.length === 0) continue;
+    const max = Math.min(box.fontSize * GROW_MAX, Math.max(GROW_MAX_PT, box.fontSize));
+    let f = box.fontSize;
+    const fits = (size: number) =>
+      lines.every((line) => textWidth(line, size) + 0.8 <= box.w) && listHeight(lines.length, size) <= box.h;
+    while (f + 1 <= max && fits(f + 1)) f++;
+    scale = Math.min(scale, f / box.fontSize);
+  }
+  if (!Number.isFinite(scale) || scale <= 1) return c;
+  const grow = (box: TextBox | undefined) => box && { ...box, fontSize: Math.round(box.fontSize * scale) };
+  return { ...c, body: grow(c.body), left: grow(c.left), right: grow(c.right) };
+}
+
+// 文章（説明文・吹き出しの文）は折り返してよいので、行数を見積もって枠の高さに収まる最大の大きさにする
+// 吹き出しは枠が細いので、大きくしすぎると語の途中で何度も折り返す。説明文より小さめで止める
+const PARAGRAPH_MAX_PT: Record<"caption" | "bubbleLarge" | "bubbleSmall", number> = { caption: 22, bubbleLarge: 19, bubbleSmall: 19 };
+function growParagraphs(c: ContentLayout, content: Subsection): ContentLayout {
+  const texts: ["caption" | "bubbleLarge" | "bubbleSmall", string | undefined][] = [
+    ["caption", content.caption],
+    ["bubbleLarge", content.bubbles?.[0]],
+    ["bubbleSmall", content.bubbles?.[1]],
+  ];
+  const next = { ...c };
+  for (const [key, text] of texts) {
+    const box = c[key];
+    if (!box || !text) continue;
+    // 1行に入る幅（インチ）は枠の幅から内側の余白を引いたもの。文の幅をそれで割って行数にする
+    const fits = (size: number) => {
+      const lines = text.split("\n").reduce((n, part) => n + Math.max(1, Math.ceil(textWidth(part, size) / (box.w - 0.3))), 0);
+      return (lines * size * 1.3) / 72 + 0.2 <= box.h;
+    };
+    let f = box.fontSize;
+    while (f + 1 <= Math.max(box.fontSize, PARAGRAPH_MAX_PT[key]) && fits(f + 1)) f++;
+    next[key] = { ...box, fontSize: f };
+  }
+  return next;
+}
+
+// 箇条書きの下にコード枠がある置き方（コード・箇条書き＋コード＋図解）は、コード枠を箇条書きのすぐ下に、行数に合わせた
+// 高さで置く（説明とコードの間や、コード枠の下に大きな空きが残らないように）。図の無い置き方はコードの文字も大きくする
+function stackCode(c: ContentLayout, content: Subsection): ContentLayout {
+  const key = c.left ? "left" : "body";
+  const text = c[key];
+  const code = c.code;
+  if (!text || !code || code.y <= text.y) return c;
+  const lines = (content.code ?? "").split("\n").length;
+  const textH = content.bullets.length > 0 ? listHeight(content.bullets.length, text.fontSize) : 0;
+  const y = text.y + textH + 0.25;
+  const room = code.y + code.h - y; // コード枠に使える高さ
+  const inset = (code.inset ?? 0.1) * 2;
+  const codeH = (size: number) => (lines * size * 1.25) / 72 + inset;
+  let size = code.fontSize;
+  if (!c.diagram) {
+    const max = Math.min(code.fontSize * GROW_MAX, 26);
+    while (size + 1 <= max && codeH(size + 1) <= room && codeTextWidth(content.code ?? "", { ...code, fontSize: size + 1 }) <= code.w) size++;
+  }
+  return {
+    ...c,
+    [key]: { ...text, h: Math.max(textH, 0.4) },
+    code: { ...code, fontSize: size, y, h: Math.min(room, codeH(size)) },
   };
 }
 
 // 本文スライド1枚分の文字枠と中身の対応。pptx もプレビューもこれを描く。
 // includeEmpty を付けると中身が空の枠も返す（編集画面で空の枠に書き込めるようにするため）
 export function contentSlideItems(layoutDef: ContentLayout, content: Subsection, includeEmpty = false): SlideItem[] {
-  const c = flexDiagramLayout(layoutDef, content);
+  const c = stackCode(growParagraphs(growLists(flexDiagramLayout(layoutDef, content), content), content), content);
   const texts: [BoxKey, TextBox | undefined, string | undefined][] = [
     ["heading", c.heading, content.heading],
     ["leftLabel", c.leftLabel, content.leftLabel],
