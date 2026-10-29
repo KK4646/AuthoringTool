@@ -243,7 +243,8 @@ async function renderSvg(code: string, box: TextBox): Promise<string> {
   return fitScale(second, box) > fitScale(first, box) ? second.svg : first.svg;
 }
 
-// SVG を、枠と同じ縦横比の透明な PNG にする（図は真ん中に、縦横比を保って収める）
+// SVG を、枠と同じ縦横比の透明な PNG にする（縦横比を保って収め、上下は真ん中・左右は右寄せ。
+// 右端の空きをなくし、左の箇条書きとの間を広く取るため。2026-10-29 ユーザーの指示）
 async function svgToPng(svg: string, box: TextBox): Promise<Blob> {
   const width = Math.round(box.w * DIAGRAM_PX_PER_INCH);
   const height = Math.round(box.h * DIAGRAM_PX_PER_INCH);
@@ -263,7 +264,7 @@ async function svgToPng(svg: string, box: TextBox): Promise<Blob> {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  canvas.getContext("2d")!.drawImage(img, (width - w) / 2, (height - h) / 2, w, h);
+  canvas.getContext("2d")!.drawImage(img, width - w, (height - h) / 2, w, h);
   return new Promise((resolve, reject) =>
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("PNGにできませんでした"))), "image/png"),
   );
@@ -343,7 +344,7 @@ export function DiagramBox({ code, box, style }: { code: string; box: TextBox; s
   }
   return (
     <div
-      style={{ ...style, alignItems: "center", justifyContent: "center" }}
+      style={{ ...style, alignItems: "flex-end", justifyContent: "center" }}
       className="[&>svg]:h-full [&>svg]:max-w-full"
       dangerouslySetInnerHTML={{ __html: svg }}
     />

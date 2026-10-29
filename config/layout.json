@@ -89,14 +89,14 @@
       "background": "backgrounds/04-content.png",
       "backgroundColor": "24365A",
       "heading": { "x": 0.8, "y": 0.2, "w": 11.7, "h": 0.75, "fontSize": 32, "color": "FFFFFF", "bold": true, "align": "left", "valign": "bottom" },
-      "body": { "x": 0.8, "y": 1.4, "w": 4.0, "h": 5.4, "fontSize": 18, "color": "FFFFFF", "bold": false, "align": "left", "valign": "top" },
+      "body": { "x": 0.8, "y": 1.4, "w": 4.0, "h": 5.4, "fontSize": 22, "color": "FFFFFF", "bold": false, "align": "left", "valign": "top" },
       "diagram": { "x": 5.0, "y": 1.2, "w": 7.5, "h": 5.7, "fontSize": 14, "color": "FFFFFF", "bold": false, "align": "left", "valign": "top", "fontFace": "Consolas" }
     },
     "content-diagram": {
       "background": "backgrounds/04-content.png",
       "backgroundColor": "24365A",
       "heading": { "x": 0.8, "y": 0.2, "w": 11.7, "h": 0.75, "fontSize": 32, "color": "FFFFFF", "bold": true, "align": "left", "valign": "bottom" },
-      "left": { "x": 0.8, "y": 1.4, "w": 4.9, "h": 5.4, "fontSize": 18, "color": "FFFFFF", "bold": false, "align": "left", "valign": "top" },
+      "left": { "x": 0.8, "y": 1.4, "w": 4.9, "h": 5.4, "fontSize": 22, "color": "FFFFFF", "bold": false, "align": "left", "valign": "top" },
       "diagram": { "x": 5.9, "y": 1.4, "w": 6.6, "h": 5.4, "fontSize": 14, "color": "FFFFFF", "bold": false, "align": "left", "valign": "top", "fontFace": "Consolas" }
     }
   },
