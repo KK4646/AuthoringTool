@@ -263,7 +263,8 @@ number はスライド番号です。全${topics.length}枚すべてについて
   diagram に図の記法（右の枠は縦長に近いので、flowchart なら TD にする）
 - 図の記法（diagram と content-diagram の diagram）は Mermaid。内容に最も合う種類を次から選ぶ
   - 手順・流れ・仕組み・原因と結果 → flowchart（1行目は "flowchart LR" か "flowchart TD"）。ノードは A["文字"] のように必ず "" で囲む。
-    矢印の文字は付けないか短く
+    矢印の文字は付けないか短く（A -->|文字| B の形）。一直線に並ぶノードは5個までにし、それより多い流れは段階をまとめる
+    （横に長すぎると図が小さくなるため）。分かれ道や合流があるなら、それも図に入れる
   - 年や時期ごとの出来事 → timeline（1行目は "timeline"、次の行から "    2017 : 出来事"）
   - 1つのテーマから広がる要素・分類 → mindmap（1行目は "mindmap"、次の行に "  root((テーマ))"、要素は字下げで階層を表す）
   - 人やシステムの間のやり取りの順番 → sequenceDiagram（1行目は "sequenceDiagram"、"    A->>B: 文字" の形）

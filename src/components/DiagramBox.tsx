@@ -10,18 +10,70 @@ import { createClient } from "@/lib/supabase/client";
 const saving = new Map<string, Promise<void>>();
 let renderCount = 0;
 
+// 図の配色。スライドの紺の背景に合わせた、パステル寄りの青系（共通ルールの「パステル寄り・低彩度」）
+const SLIDE_BG = "#24365A";
+const PASTELS = ["#DCE8FA", "#DDF3EA", "#FBE8D8", "#EDE3F7", "#FAF1C9", "#F7DDE6", "#D9F0F7", "#E6EBF2"];
+const THEME_VARIABLES = {
+  background: "transparent",
+  fontFamily: "Noto Sans JP, sans-serif",
+  fontSize: "20px",
+  primaryColor: PASTELS[0],
+  primaryTextColor: "#1F2A44",
+  primaryBorderColor: "#9DB9E6",
+  secondaryColor: PASTELS[1],
+  tertiaryColor: PASTELS[2],
+  lineColor: "#DDE3F0",
+  textColor: "#F5F7FB",
+  // 矢印の上の文字の下地を背景と同じ色で塗り、文字の部分だけ矢印の線が消えて見えるようにする
+  edgeLabelBackground: SLIDE_BG,
+  // シーケンス図
+  actorBkg: PASTELS[0],
+  actorBorder: "#9DB9E6",
+  actorTextColor: "#1F2A44",
+  signalColor: "#DDE3F0",
+  signalTextColor: "#F5F7FB",
+  noteBkgColor: PASTELS[4],
+  noteTextColor: "#1F2A44",
+  // 年表・マインドマップの枝ごとの色
+  ...Object.fromEntries(PASTELS.flatMap((c, i) => [[`cScale${i}`, c], [`cScaleLabel${i}`, "#1F2A44"]])),
+};
+
+// 矢印の上の文字は明るい色にし、下地は背景と同じ色で塗る（文字の部分だけ矢印の線が消えて見える）
+const THEME_CSS = `
+  .edgeLabel text, .edgeLabel tspan, .edgeLabel .label text { fill: #F5F7FB !important; }
+  .edgeLabel rect, .labelBkg { fill: ${SLIDE_BG} !important; opacity: 1 !important; }
+`;
+
 // mermaid は大きいので、図解のスライドを描くときだけ読み込む
-async function renderSvg(code: string): Promise<string> {
+async function renderOnce(code: string): Promise<{ svg: string; w: number; h: number }> {
   const mermaid = (await import("mermaid")).default;
   mermaid.initialize({
     startOnLoad: false,
-    theme: "dark",
+    theme: "base",
     // 文字を HTML でなく SVG の文字で描く（HTML の文字が入った SVG は PNG に変えられないため）
     htmlLabels: false,
-    themeVariables: { background: "transparent", fontFamily: "Noto Sans JP, sans-serif" },
+    themeVariables: THEME_VARIABLES,
+    themeCSS: THEME_CSS,
+    flowchart: { curve: "basis", nodeSpacing: 40, rankSpacing: 50, padding: 16 },
   });
   const { svg } = await mermaid.render(`diagram-${++renderCount}`, code);
-  return svg;
+  const [, , w, h] = (svg.match(/viewBox="([^"]+)"/)?.[1] ?? "0 0 1 1").split(/[\s,]+/).map(Number);
+  return { svg, w, h };
+}
+
+// 枠に収めたときの拡大率（大きいほど図が大きく見える）
+const fitScale = (d: { w: number; h: number }, box: TextBox) => Math.min(box.w / d.w, box.h / d.h);
+
+// 図を描く。flowchart は左右（LR）と上下（TD）の両方で描き、枠に収めたとき大きく見える方を使う
+// （横に長すぎる・縦に長すぎる図は、枠に収めると小さくなりすぎるため）
+async function renderSvg(code: string, box: TextBox): Promise<string> {
+  const first = await renderOnce(code);
+  const direction = /^(\s*(?:flowchart|graph)\s+)(LR|RL|TD|TB|BT)\b/;
+  const m = code.match(direction);
+  if (!m) return first.svg;
+  const flipped = code.replace(direction, `$1${["LR", "RL"].includes(m[2]) ? "TD" : "LR"}`);
+  const second = await renderOnce(flipped);
+  return fitScale(second, box) > fitScale(first, box) ? second.svg : first.svg;
 }
 
 // SVG を、枠と同じ縦横比の透明な PNG にする（図は真ん中に、縦横比を保って収める）
@@ -82,7 +134,7 @@ export async function saveDiagrams(diagrams: { code: string; box: TextBox }[]): 
       const running = saving.get(diagramKey(code, box));
       if (running) return running;
       try {
-        await savePng(code, await renderSvg(code), box);
+        await savePng(code, await renderSvg(code, box), box);
       } catch {
         // 描けない図は飛ばす
       }
@@ -100,7 +152,7 @@ export function DiagramBox({ code, box, style }: { code: string; box: TextBox; s
 
   useEffect(() => {
     let cancelled = false;
-    renderSvg(code)
+    renderSvg(code, box)
       .then((result) => {
         if (cancelled) return;
         setSvg(result);

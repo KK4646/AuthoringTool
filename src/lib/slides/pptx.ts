@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import PptxGenJS from "pptxgenjs";
 import { diagramKey } from "@/lib/slides/diagram";
+import { codeLines, CODE_COLORS } from "@/lib/slides/codeHighlight";
 import { splitRuns } from "@/lib/slides/emphasis";
 import { loadLayout, type TextBox } from "@/lib/slides/layout";
 import { renderDeck } from "@/lib/slides/render";
@@ -30,6 +31,7 @@ function boxOptions(box: TextBox, fontFace: string): TextProps {
     valign: box.valign,
     fontFace: box.fontFace ?? fontFace,
     ...(box.fill ? { fill: { color: box.fill } } : {}),
+    ...(box.inset ? { margin: box.inset * 72 } : {}), // pptxgenjs の余白はポイント
     fit: "shrink" as const, // 枠からあふれたら PowerPoint 側で縮小
   };
 }
@@ -60,6 +62,18 @@ function listLines(lines: string[], bullet: boolean) {
 // 図解（diagram.ts の diagramKey）→ 保存済みの PNG（pptxgenjs の data の形 "image/png;base64,…"）。無い図は記法の文字のまま入れる
 export type DiagramImages = Map<string, string>;
 
+// コードの置き方のコード。行番号を付け、エディタ風に色分けする（色の印 [[色|語]] は使わない）
+function codeText(code: string) {
+  return codeLines(code).flatMap((line) => {
+    const parts: { text: string; options: TextProps }[] = [
+      { text: `${line.number}  `, options: { color: CODE_COLORS.lineNumber } },
+      ...line.runs.map((run) => ({ text: run.text, options: { color: run.color } })),
+    ];
+    parts[parts.length - 1].options = { ...parts[parts.length - 1].options, breakLine: true };
+    return parts;
+  });
+}
+
 export async function buildPptx(deck: Deck, diagramImages: DiagramImages = new Map()): Promise<Buffer> {
   const layout = loadLayout();
   const font = layout.fontFace;
@@ -73,6 +87,7 @@ export async function buildPptx(deck: Deck, diagramImages: DiagramImages = new M
     for (const item of r.items) {
       const image = item.kind === "text" && item.key === "diagram" ? diagramImages.get(diagramKey(item.text, item.box)) : undefined;
       if (image) slide.addImage({ data: image, x: item.box.x, y: item.box.y, w: item.box.w, h: item.box.h });
+      else if (item.kind === "text" && item.key === "code") slide.addText(codeText(item.text), boxOptions(item.box, font));
       else if (item.kind === "text") slide.addText(runs(item.text), boxOptions(item.box, font));
       else slide.addText(listLines(item.lines, item.bullet), boxOptions(item.box, font));
     }

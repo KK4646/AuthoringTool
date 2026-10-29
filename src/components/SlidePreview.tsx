@@ -2,6 +2,7 @@
 
 import type { CSSProperties, RefObject } from "react";
 import { DiagramBox } from "@/components/DiagramBox";
+import { codeLines, CODE_COLORS } from "@/lib/slides/codeHighlight";
 import { splitRuns } from "@/lib/slides/emphasis";
 import type { TextBox } from "@/lib/slides/layout";
 import type { RenderedSlide, SlideItem } from "@/lib/slides/render";
@@ -35,7 +36,9 @@ function boxStyle(box: TextBox): CSSProperties {
     justifyContent: VALIGN[box.valign],
     lineHeight: 1.25,
     // pptx の既定の内側の余白（0.1インチ・0.05インチ）に合わせる
-    padding: `${(0.05 / SLIDE_H) * 100}cqh ${(0.1 / SLIDE_W) * 100}cqw`,
+    padding: box.inset
+      ? `${(box.inset / SLIDE_H) * 100}cqh ${(box.inset / SLIDE_W) * 100}cqw`
+      : `${(0.05 / SLIDE_H) * 100}cqh ${(0.1 / SLIDE_W) * 100}cqw`,
     overflow: "hidden",
     ...(box.fill ? { backgroundColor: `#${box.fill}` } : {}),
     ...(box.fontFace ? { fontFamily: `"${box.fontFace}", ui-monospace, monospace`, whiteSpace: "pre" } : {}),
@@ -106,6 +109,23 @@ function Box({ item, editing }: { item: SlideItem; editing: boolean }) {
   // 図解の図。編集中は記法を文字のまま直せるようにする
   if (item.kind === "text" && item.key === "diagram" && !editing) {
     return <DiagramBox code={item.text} box={item.box} style={boxStyle(item.box)} />;
+  }
+  // コード。行番号を付けてエディタ風に色分けする。編集中は文字のまま直せるようにする
+  if (item.kind === "text" && item.key === "code" && !editing) {
+    return (
+      <div style={boxStyle(item.box)}>
+        {codeLines(item.text).map((line, i) => (
+          <div key={i}>
+            <span style={{ color: `#${CODE_COLORS.lineNumber}` }}>{line.number}  </span>
+            {line.runs.map((run, j) => (
+              <span key={j} style={{ color: `#${run.color}` }}>
+                {run.text}
+              </span>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
   }
   if (item.kind === "text") {
     return (

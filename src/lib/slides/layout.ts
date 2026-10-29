@@ -15,6 +15,7 @@ export type TextBox = {
   valign: "top" | "middle" | "bottom";
   fontFace?: string; // 枠だけ別のフォントにするとき（コード枠の等幅フォントなど）
   fill?: string; // 枠の塗りつぶし色（コード枠など）
+  inset?: number; // 枠の端と文字の間の余白（インチ。無ければ pptx の既定の 0.05〜0.1）
 };
 
 type SlideBase = {
