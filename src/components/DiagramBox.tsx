@@ -56,8 +56,7 @@ const THEME_CSS = `
 type SideLabel = { from: string; to: string; text: string };
 
 const SIDE_GAP = 40; // 箱の右端からカギ形の縦線まで
-const SIDE_PILL_GAP = 10; // カギ形の縦線から札の左端まで（線に札が重ならないように）
-const SIDE_PILL_PAD = 12; // 札の左右の内側の余白
+const SIDE_TEXT_GAP = 12; // カギ形の縦線から文字まで
 const SIDE_FONT = 22;
 const SIDE_SHIFT = 0.28; // 箱の高さに対する、中央からのずれ
 const SIDE_RADIUS = 8; // カギ形の角の丸み
@@ -154,27 +153,17 @@ function drawSideLabels(svg: string, sides: SideLabel[]): string {
     const text = doc.createElementNS(SVG_NS, "text");
     text.setAttribute("y", String((a.cy + b.cy) / 2));
     text.setAttribute("dominant-baseline", "central");
-    text.setAttribute("text-anchor", "middle"); // 札の中央にそろえる
     text.setAttribute("fill", "#F5F7FB");
     text.setAttribute("font-size", String(SIDE_FONT));
     text.setAttribute("font-family", "Noto Sans JP, sans-serif");
     text.setAttribute("font-weight", "700");
     text.textContent = side.text;
-    // 文字の下に札を敷いて目立たせる。札の幅は実際の文字の幅から決め、文字は札の真ん中に置く
-    const textW = measureText(side.text);
-    const pillX = x + SIDE_PILL_GAP;
-    const pillW = textW + SIDE_PILL_PAD * 2;
-    const pill = doc.createElementNS(SVG_NS, "rect");
-    pill.setAttribute("x", String(pillX));
-    pill.setAttribute("y", String((a.cy + b.cy) / 2 - SIDE_FONT * 0.85));
-    pill.setAttribute("width", String(pillW));
-    pill.setAttribute("height", String(SIDE_FONT * 1.7));
-    pill.setAttribute("rx", String(SIDE_FONT * 1.7 * 0.25)); // 角の丸みは高さの25%まで
-    text.setAttribute("x", String(pillX + pillW / 2));
-    pill.setAttribute("fill", "rgba(169, 196, 238, 0.22)");
-    root.appendChild(pill);
+    // 文字はカギ形の縦線の右に、少し離して置く（下地は敷かない。2026-10-29 ユーザーの指示）
+    const textX = x + SIDE_TEXT_GAP;
+    text.setAttribute("x", String(textX));
+    text.setAttribute("text-anchor", "start");
     root.appendChild(text);
-    maxX = Math.max(maxX, pillX + pillW + 4);
+    maxX = Math.max(maxX, textX + measureText(side.text) + 4);
   }
   root.setAttribute("viewBox", `${vx} ${vy} ${maxX - vx} ${vh}`);
   return new XMLSerializer().serializeToString(root);
