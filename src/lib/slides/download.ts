@@ -1,7 +1,15 @@
+import { diagramCodes } from "@/lib/slides/diagram";
+import type { TextBox } from "@/lib/slides/layout";
 import type { Deck } from "@/lib/slides/types";
 
-// サーバーで pptx を作ってもらい、ブラウザでダウンロードさせる。失敗したらエラーを投げる
-export async function downloadPptx(deck: Deck): Promise<void> {
+// サーバーで pptx を作ってもらい、ブラウザでダウンロードさせる。失敗したらエラーを投げる。
+// diagramBox（図解の枠）を渡すと、先に図解を PNG にして保存し終えてから作る（図が画像で入る）
+export async function downloadPptx(deck: Deck, diagramBox?: TextBox): Promise<void> {
+  const codes = diagramCodes(deck);
+  if (diagramBox && codes.length > 0) {
+    const { saveDiagrams } = await import("@/components/DiagramBox");
+    await saveDiagrams(codes, diagramBox);
+  }
   const res = await fetch("/api/pptx", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

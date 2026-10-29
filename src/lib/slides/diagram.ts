@@ -1,3 +1,5 @@
+import type { Deck } from "@/lib/slides/types";
+
 // 図解の置き方（Mermaid の記法から描く図）の画像の置き場所。ブラウザ（描いて保存）とサーバー（pptx に貼る）の両方で使う
 
 // 画像を置く Storage のバケット（0120）。非公開で、本人のフォルダだけ読み書きできる
@@ -15,4 +17,12 @@ export async function diagramHash(code: string): Promise<string> {
 // バケットの中のキー。先頭のフォルダを user_id にする（ポリシーがここで本人に絞る）
 export async function diagramPath(userId: string, code: string): Promise<string> {
   return `${userId}/${await diagramHash(code)}.png`;
+}
+
+// スライドにある図解の記法の一覧
+export function diagramCodes(deck: Deck): string[] {
+  return deck.sections
+    .flatMap((s) => [s, ...(s.subsections ?? [])])
+    .filter((s) => s.layout === "diagram" && s.diagram)
+    .map((s) => s.diagram!);
 }

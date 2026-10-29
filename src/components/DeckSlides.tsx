@@ -52,7 +52,7 @@ export function DeckSlides({ id, initialDeck, layout }: { id: string; initialDec
   return (
     <>
       <div className="flex flex-col gap-1">
-        <DownloadButton deck={deck} />
+        <DownloadButton deck={deck} diagramBox={layout.layouts.diagram.diagram} />
         {saving && <p className="text-xs text-[var(--muted)]">保存中…</p>}
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>

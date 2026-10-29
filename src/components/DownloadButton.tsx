@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { downloadPptx } from "@/lib/slides/download";
+import type { TextBox } from "@/lib/slides/layout";
 import type { Deck } from "@/lib/slides/types";
 
-export function DownloadButton({ deck }: { deck: Deck }) {
+export function DownloadButton({ deck, diagramBox }: { deck: Deck; diagramBox?: TextBox }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -12,7 +13,7 @@ export function DownloadButton({ deck }: { deck: Deck }) {
     setBusy(true);
     setError("");
     try {
-      await downloadPptx(deck);
+      await downloadPptx(deck, diagramBox);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
