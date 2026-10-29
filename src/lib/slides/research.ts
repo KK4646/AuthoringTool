@@ -70,7 +70,9 @@ ${numberedTopics(topics)}
 - スライドごとに「【スライド番号】」の見出しを付け、要点を日本語の箇条書き（5項目程度まで）でまとめる
 - 具体的な事実・数値・年を優先し、信頼できる情報源（公的機関・論文・大手報道など）を使う
 - 情報が古い可能性があるものは時点を明記する
-- プログラミングなどコードで示すと分かりやすい話題は、短いコード例もメモに含める`,
+- プログラミングなどコードで示すと分かりやすい話題は、短いコード例もメモに含める
+- 手順・流れ・仕組み・原因と結果・時系列の変化がある話題は、図にできるよう、段階や要素とそのつながりを
+  「A → B → C」の形でもメモに含める`,
     },
   ];
 
@@ -234,6 +236,10 @@ ${numberedTopics(topics)}
 number はスライド番号です。全${topics.length}枚すべてについて作ってください。
 
 置き方の選び方（内容に合うものを選ぶ。迷ったら content）
+- 後から手で直さなくて済むよう、次に当てはまるスライドは必ずその置き方にする
+  - プログラミング・コマンド・設定ファイルなど、具体的な書き方を見せられる話題 → code
+  - 手順・流れ・仕組み・原因と結果・時系列の変化など、段階やつながりを図で見せられる話題 → diagram
+  - ただし code と diagram を合わせて全体の半分までにする
 - content: 見出し＋箇条書き1段。bullets に${limits.maxBullets}項目以内、1項目全角${limits.maxCharsPerBullet}文字以内
 - two-content: 2つのまとまりを左右2段で並べる。bullets（左）と right（右）にそれぞれ${limits.maxBullets}項目以内、
   1項目全角${limits.maxCharsPerColumnBullet}文字以内
@@ -246,7 +252,7 @@ number はスライド番号です。全${topics.length}枚すべてについて
   bubbles に[大きい吹き出し（全角${limits.maxBubbleLargeChars}文字以内）, 小さい吹き出し（全角${limits.maxBubbleSmallChars}文字以内）]の2つ
 - code: コード例を見せるスライド。bullets に${limits.maxCodeBullets}項目以内の短い説明（1項目全角${limits.maxCharsPerBullet}文字以内）、
   code にコード（${limits.maxCodeLines}行以内・1行半角${limits.maxCodeLineChars}文字以内。改行と字下げはそのまま。説明は // などのコメントで短く）
-- diagram: 流れ・手順・仕組み・関係を図で見せると分かりやすいもの。全体の4枚に1枚程度まで。
+- diagram: 流れ・手順・仕組み・関係を図で見せると分かりやすいもの。
   bullets に${limits.maxCodeBullets}項目以内の短い説明（1項目全角${limits.maxCharsPerBullet}文字以内）、
   diagram に Mermaid の flowchart の記法（1行目は "flowchart LR" か "flowchart TD"）。ノードは${limits.maxDiagramNodes}個以内、
   ノードの文字は全角${limits.maxDiagramNodeChars}文字以内で A["文字"] のように必ず "" で囲む。矢印の文字は付けないか短く
