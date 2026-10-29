@@ -92,6 +92,13 @@ export const SAMPLE_DECK: Deck = {
       sources: [],
     },
     {
+      heading: "図解：見出し",
+      layout: "diagram",
+      bullets: ["図の短い説明"],
+      diagram: 'flowchart LR\n  A["テーマを入力"] --> B["Webで調べる"] --> C["本文を作る"] --> D["pptxを作る"]',
+      sources: [],
+    },
+    {
       // 小項目のある中項目（区切りのスライド＋小項目ごとの本文）の配置確認用
       heading: "小項目のある中項目の見出し（区切りのスライド）",
       bullets: [],

@@ -57,6 +57,7 @@ export function SlideEditor({
         ? [text("bubbleLarge", slide.bubbles?.[0]) ?? "", text("bubbleSmall", slide.bubbles?.[1]) ?? ""]
         : slide.bubbles,
       code: text("code", slide.code),
+      diagram: text("diagram", slide.diagram),
     });
   }
 

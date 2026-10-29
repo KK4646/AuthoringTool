@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties, RefObject } from "react";
+import { DiagramBox } from "@/components/DiagramBox";
 import { splitRuns } from "@/lib/slides/emphasis";
 import type { TextBox } from "@/lib/slides/layout";
 import type { RenderedSlide, SlideItem } from "@/lib/slides/render";
@@ -102,6 +103,10 @@ function Box({ item, editing }: { item: SlideItem; editing: boolean }) {
         className: "outline-dashed outline-1 outline-white/60 focus:outline-white",
       }
     : {};
+  // 図解の図。編集中は記法を文字のまま直せるようにする
+  if (item.kind === "text" && item.key === "diagram" && !editing) {
+    return <DiagramBox code={item.text} box={item.box} style={boxStyle(item.box)} />;
+  }
   if (item.kind === "text") {
     return (
       <div style={boxStyle(item.box)}>

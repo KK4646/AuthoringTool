@@ -122,6 +122,7 @@ export const AI_LAYOUTS = [
   "content-with-caption",
   "bubbles",
   "code",
+  "diagram",
 ] as const;
 type AiLayout = (typeof AI_LAYOUTS)[number];
 
@@ -135,6 +136,7 @@ type ComposedSlide = {
   caption: string;
   bubbles: string[];
   code: string;
+  diagram: string;
 };
 
 // normalizeSlide で切りそろえる上限（config/layout.json の content）
@@ -164,6 +166,7 @@ export function normalizeSlide(raw: ComposedSlide, limits: SlideLimits): SlideBo
     .split("\n")
     .slice(0, limits.maxCodeLines)
     .join("\n");
+  const diagram = raw.diagram.trim();
 
   switch (raw.layout) {
     case "comparison":
@@ -183,6 +186,9 @@ export function normalizeSlide(raw: ComposedSlide, limits: SlideLimits): SlideBo
       break;
     case "code":
       if (code) return { layout: "code", bullets: bullets.slice(0, limits.maxCodeBullets), code };
+      break;
+    case "diagram":
+      if (diagram) return { layout: "diagram", bullets: bullets.slice(0, limits.maxCodeBullets), diagram };
       break;
   }
   return { layout: "content", bullets: [...bullets, ...right].slice(0, maxBullets) };
@@ -207,6 +213,7 @@ async function composeSlides(
         caption: z.string(),
         bubbles: z.array(z.string()),
         code: z.string(),
+        diagram: z.string(),
       }),
     ),
   });
@@ -239,6 +246,10 @@ number はスライド番号です。全${topics.length}枚すべてについて
   bubbles に[大きい吹き出し（全角${limits.maxBubbleLargeChars}文字以内）, 小さい吹き出し（全角${limits.maxBubbleSmallChars}文字以内）]の2つ
 - code: コード例を見せるスライド。bullets に${limits.maxCodeBullets}項目以内の短い説明（1項目全角${limits.maxCharsPerBullet}文字以内）、
   code にコード（${limits.maxCodeLines}行以内・1行半角${limits.maxCodeLineChars}文字以内。改行と字下げはそのまま。説明は // などのコメントで短く）
+- diagram: 流れ・手順・仕組み・関係を図で見せると分かりやすいもの。全体の4枚に1枚程度まで。
+  bullets に${limits.maxCodeBullets}項目以内の短い説明（1項目全角${limits.maxCharsPerBullet}文字以内）、
+  diagram に Mermaid の flowchart の記法（1行目は "flowchart LR" か "flowchart TD"）。ノードは${limits.maxDiagramNodes}個以内、
+  ノードの文字は全角${limits.maxDiagramNodeChars}文字以内で A["文字"] のように必ず "" で囲む。矢印の文字は付けないか短く
 - 選んだ置き方で使わない項目は空（"" や []）にする
 
 書き方

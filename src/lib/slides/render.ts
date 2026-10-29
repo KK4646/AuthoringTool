@@ -12,7 +12,8 @@ export type BoxKey =
   | "caption"
   | "bubbleLarge"
   | "bubbleSmall"
-  | "code";
+  | "code"
+  | "diagram";
 
 // 1枚のスライドに置く文字。list は箇条書き（1要素が1項目。出典の一覧は点なし）、text は1つの文
 export type SlideItem =
@@ -38,6 +39,7 @@ export function contentSlideItems(c: ContentLayout, content: Subsection, include
     ["bubbleLarge", c.bubbleLarge, content.bubbles?.[0]],
     ["bubbleSmall", c.bubbleSmall, content.bubbles?.[1]],
     ["code", c.code, content.code],
+    ["diagram", c.diagram, content.diagram],
   ];
   // 1段の置き方は body、2段の置き方は left に、同じ bullets を書く
   const lists: [BoxKey, TextBox | undefined, string[] | undefined][] = [

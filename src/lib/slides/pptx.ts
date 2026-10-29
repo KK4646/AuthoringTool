@@ -56,7 +56,10 @@ function listLines(lines: string[], bullet: boolean) {
   });
 }
 
-export async function buildPptx(deck: Deck): Promise<Buffer> {
+// 図解の記法 → 保存済みの PNG（pptxgenjs の data の形 "image/png;base64,…"）。無い図は記法の文字のまま入れる
+export type DiagramImages = Map<string, string>;
+
+export async function buildPptx(deck: Deck, diagramImages: DiagramImages = new Map()): Promise<Buffer> {
   const layout = loadLayout();
   const font = layout.fontFace;
   const pptx = new PptxGenJS();
@@ -67,7 +70,9 @@ export async function buildPptx(deck: Deck): Promise<Buffer> {
     const slide = pptx.addSlide();
     setBackground(slide, r.background, r.backgroundColor);
     for (const item of r.items) {
-      if (item.kind === "text") slide.addText(runs(item.text), boxOptions(item.box, font));
+      const image = item.kind === "text" && item.key === "diagram" ? diagramImages.get(item.text) : undefined;
+      if (image) slide.addImage({ data: image, x: item.box.x, y: item.box.y, w: item.box.w, h: item.box.h });
+      else if (item.kind === "text") slide.addText(runs(item.text), boxOptions(item.box, font));
       else slide.addText(listLines(item.lines, item.bullet), boxOptions(item.box, font));
     }
   }

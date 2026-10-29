@@ -47,6 +47,7 @@ describe("normalizeSlide", () => {
     caption: "",
     bubbles: [] as string[],
     code: "",
+    diagram: "",
   };
   const limits = { maxBullets: 5, maxCodeBullets: 2, maxCodeLines: 3 };
 
@@ -92,6 +93,7 @@ describe("normalizeSlide（コード）", () => {
     caption: "",
     bubbles: [] as string[],
     code: "",
+    diagram: "",
   };
   const limits = { maxBullets: 5, maxCodeBullets: 2, maxCodeLines: 3 };
 
@@ -106,5 +108,28 @@ describe("normalizeSlide（コード）", () => {
 
   it("コードが空なら1つのコンテンツにする", () => {
     expect(normalizeSlide({ ...raw, code: " \n " }, limits)).toEqual({ layout: "content", bullets: ["a", "b", "c"] });
+  });
+});
+
+describe("normalizeSlide（図解）", () => {
+  const raw = {
+    layout: "diagram" as const,
+    bullets: ["a", "b", "c"],
+    right: [] as string[],
+    leftLabel: "",
+    rightLabel: "",
+    caption: "",
+    bubbles: [] as string[],
+    code: "",
+    diagram: "\n flowchart LR\n  A --> B \n",
+  };
+  const limits = { maxBullets: 5, maxCodeBullets: 2, maxCodeLines: 3 };
+
+  it("記法の前後の空白を落とし、箇条書きを上限で切る", () => {
+    expect(normalizeSlide(raw, limits)).toEqual({ layout: "diagram", bullets: ["a", "b"], diagram: "flowchart LR\n  A --> B" });
+  });
+
+  it("記法が空なら1つのコンテンツにする", () => {
+    expect(normalizeSlide({ ...raw, diagram: " " }, limits)).toEqual({ layout: "content", bullets: ["a", "b", "c"] });
   });
 });
