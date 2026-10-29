@@ -158,6 +158,8 @@
       - 色つきの span は入れ子にしない（入れ子になると読み戻しで外側の色にまとめられるため、付け直すときは分割する）
    7. ✅ 図解の置き方を足す（2026-10-29、ユーザーの指示。画像の生成AIは使わず、Mermaid の記法で図を描く）
       - 中身は見出し＋短い説明（箇条書き）＋ `diagram`（Mermaid の記法）。背景は 04。AI には flowchart だけを書かせる
+      - 2026-10-29 に、図を上下の帯で横に並べる形をやめ、左に短い説明・右に上から下の大きな図にした（横で小さくなるため。
+        ユーザーの指示）。flowchart は TD で書かせる
         （ノード数・文字数の上限は `config/layout.json` の `maxDiagramNodes` / `maxDiagramNodeChars`）
       - 図はブラウザで描く（`DiagramBox`。mermaid は図解のスライドを描くときだけ読み込む）。描いた図は枠と同じ縦横比の
         PNG にして、Storage の非公開バケット `slideapp-diagrams`（0120）の `<user_id>/<記法の SHA-256>.png` に保存する

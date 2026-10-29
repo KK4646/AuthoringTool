@@ -65,7 +65,7 @@ async function renderOnce(code: string): Promise<{ svg: string; w: number; h: nu
 const fitScale = (d: { w: number; h: number }, box: TextBox) => Math.min(box.w / d.w, box.h / d.h);
 
 // 図を描く。flowchart は左右（LR）と上下（TD）の両方で描き、枠に収めたとき大きく見える方を使う
-// （横に長すぎる・縦に長すぎる図は、枠に収めると小さくなりすぎるため）
+// （図の枠は右側の縦長なので、横に並ぶ図は小さくなりやすい。2026-10-29 ユーザーの指示で上から下を基本にした）
 async function renderSvg(code: string, box: TextBox): Promise<string> {
   const first = await renderOnce(code);
   const direction = /^(\s*(?:flowchart|graph)\s+)(LR|RL|TD|TB|BT)\b/;

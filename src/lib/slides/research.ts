@@ -257,14 +257,14 @@ number はスライド番号です。全${topics.length}枚すべてについて
   bubbles に[大きい吹き出し（全角${limits.maxBubbleLargeChars}文字以内）, 小さい吹き出し（全角${limits.maxBubbleSmallChars}文字以内）]の2つ
 - code: コード例を見せるスライド。bullets に${limits.maxCodeBullets}項目以内の短い説明（1項目全角${limits.maxCharsPerBullet}文字以内）、
   code にコード（${limits.maxCodeLines}行以内・1行半角${limits.maxCodeLineChars}文字以内。改行と字下げはそのまま。説明は // などのコメントで短く）
-- diagram: 流れ・手順・仕組み・関係を図で見せると分かりやすいもの。図を横長に大きく見せる。
-  bullets に${limits.maxCodeBullets}項目以内の短い説明（1項目全角${limits.maxCharsPerBullet}文字以内）、diagram に図の記法
+- diagram: 流れ・手順・仕組み・関係を図で見せると分かりやすいもの。左に短い説明、右に図を大きく見せる。
+  bullets に${limits.maxCodeBullets}項目以内の短い説明（1項目全角${limits.maxCharsPerColumnBullet}文字以内）、diagram に図の記法
 - content-diagram: 左に要点の箇条書き、右に図。bullets に${limits.maxBullets}項目以内、1項目全角${limits.maxCharsPerColumnBullet}文字以内、
   diagram に図の記法（右の枠は縦長に近いので、flowchart なら TD にする）
 - 図の記法（diagram と content-diagram の diagram）は Mermaid。内容に最も合う種類を次から選ぶ
-  - 手順・流れ・仕組み・原因と結果 → flowchart（1行目は "flowchart LR" か "flowchart TD"）。ノードは A["文字"] のように必ず "" で囲む。
-    矢印の文字は付けないか短く（A -->|文字| B の形）。一直線に並ぶノードは5個までにし、それより多い流れは段階をまとめる
-    （横に長すぎると図が小さくなるため）。分かれ道や合流があるなら、それも図に入れる
+  - 手順・流れ・仕組み・原因と結果 → flowchart（1行目は必ず "flowchart TD"。図の枠は右側の縦長なので、上から下へ流す）。ノードは A["文字"] のように必ず "" で囲む。
+    矢印の文字は付けないか短く（A -->|文字| B の形）。一直線に並ぶノードは6個までにし、それより多い流れは段階をまとめる
+    （長すぎると図が小さくなるため）。分かれ道や合流があるなら、それも図に入れる
   - 年や時期ごとの出来事 → timeline（1行目は "timeline"、次の行から "    2017 : 出来事"）
   - 1つのテーマから広がる要素・分類 → mindmap（1行目は "mindmap"、次の行に "  root((テーマ))"、要素は字下げで階層を表す）
   - 人やシステムの間のやり取りの順番 → sequenceDiagram（1行目は "sequenceDiagram"、"    A->>B: 文字" の形）
