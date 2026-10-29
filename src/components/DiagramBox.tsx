@@ -44,30 +44,90 @@ const THEME_CSS = `
   .edgeLabel rect, .labelBkg { fill: ${SLIDE_BG} !important; opacity: 1 !important; }
 `;
 
-// 上から下へ流れる図で、矢印の上の文字を矢印の左に移す（文字が線に重ならず、図の幅も細く保てる。
-// 2026-10-29 ユーザーの手描きの指示）。図の左端が広がる分、viewBox も左へ広げる
-const LABEL_GAP = 12; // 矢印と文字の間（SVG の単位）
-function labelsBesideArrows(svg: string): string {
+// 上から下へ流れる図の、矢印に付いた文字（A -->|文字| B）の描き方（2026-10-29 ユーザーの手描きの指示）。
+// 中央の矢印からは文字を外して短くし（箱を大きく見せるため）、代わりに箱の右側に「A の右端 → 外へ → 下へ → B の右端」の
+// カギ形の矢印を描いて、その右に文字を置く
+type SideLabel = { from: string; to: string; text: string };
+
+const SIDE_GAP = 18; // 箱の右端からカギ形の縦線まで
+const SIDE_TEXT_GAP = 10; // カギ形の縦線から文字まで
+const SIDE_FONT = 22;
+const SIDE_SHIFT = 7;
+
+// 矢印の文字を外した記法にする（"A -->|文字| B" → "A --> B"）
+function takeEdgeLabels(code: string): { code: string; count: number } {
+  let count = 0;
+  const stripped = code.replace(/(--+>|==+>|-\.+->)(\s*)\|[^|]*\|/g, (_all, arrow: string, space: string) => {
+    count++;
+    return `${arrow}${space}`;
+  });
+  return { code: stripped, count };
+}
+
+// 文字つきの矢印が、どの箱からどの箱へか。文字ありで1度描いた図の data-id（"L_A_B_0"）から読む
+function edgeEnds(svg: string): SideLabel[] {
+  const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
+  return [...doc.querySelectorAll("g.edgeLabel g.label[data-id]")].flatMap((g) => {
+    const text = g.textContent?.trim();
+    const m = g.getAttribute("data-id")?.match(/^L_(.+)_(.+)_\d+$/);
+    return text && m ? [{ from: m[1], to: m[2], text }] : [];
+  });
+}
+
+function nodeBox(doc: Document, id: string) {
+  const node = [...doc.querySelectorAll("g.node")].find(
+    (g) => g.getAttribute("data-id") === id || new RegExp(`-${id}-\\d+$`).test(g.id),
+  );
+  const m = node?.getAttribute("transform")?.match(/translate\(\s*([-\d.]+)[,\s]+([-\d.]+)\s*\)/);
+  const shape = node?.querySelector("rect, polygon, path, circle");
+  if (!node || !m || !shape) return null;
+  const width = Number(shape.getAttribute("width") ?? 0) || 120;
+  return { cx: Number(m[1]), cy: Number(m[2]), right: Number(m[1]) + width / 2 };
+}
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+function drawSideLabels(svg: string, sides: SideLabel[]): string {
+  if (sides.length === 0) return svg;
   const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
   const root = doc.documentElement;
   const [vx, vy, vw, vh] = (root.getAttribute("viewBox") ?? "0 0 1 1").split(/[\s,]+/).map(Number);
-  let minX = vx;
-  doc.querySelectorAll("g.edgeLabel").forEach((label) => {
-    const rect = label.querySelector("rect.background");
-    const width = Number(rect?.getAttribute("width") ?? 0);
-    const m = label.getAttribute("transform")?.match(/translate\(\s*([-\d.]+)[,\s]+([-\d.]+)\s*\)/);
-    if (!m || width === 0) return;
-    const x = Number(m[1]) - width / 2 - LABEL_GAP;
-    label.setAttribute("transform", `translate(${x}, ${m[2]})`);
-    rect?.setAttribute("style", "display:none"); // 線の上ではなくなったので下地は要らない
-    minX = Math.min(minX, x - width / 2 - 4);
-  });
-  root.setAttribute("viewBox", `${minX} ${vy} ${vw + (vx - minX)} ${vh}`);
+  // 矢印の先の三角
+  const defs = doc.createElementNS(SVG_NS, "defs");
+  defs.innerHTML = `<marker id="side-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#DDE3F0"/></marker>`;
+  root.appendChild(defs);
+  let maxX = vx + vw;
+  for (const side of sides) {
+    const a = nodeBox(doc, side.from);
+    const b = nodeBox(doc, side.to);
+    if (!a || !b) continue;
+    const x = Math.max(a.right, b.right) + SIDE_GAP;
+    const path = doc.createElementNS(SVG_NS, "path");
+    // 出る位置は箱の中央より少し下、入る位置は少し上にずらす（続けて並ぶカギ形の線がつながって見えないように）
+    path.setAttribute("d", `M${a.right + 4},${a.cy + SIDE_SHIFT} H${x} V${b.cy - SIDE_SHIFT} H${b.right + 4}`);
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", "#DDE3F0");
+    path.setAttribute("stroke-width", "2");
+    path.setAttribute("marker-end", "url(#side-arrow)");
+    root.appendChild(path);
+    const text = doc.createElementNS(SVG_NS, "text");
+    text.setAttribute("x", String(x + SIDE_TEXT_GAP));
+    text.setAttribute("y", String((a.cy + b.cy) / 2));
+    text.setAttribute("dominant-baseline", "middle");
+    text.setAttribute("fill", "#F5F7FB");
+    text.setAttribute("font-size", String(SIDE_FONT));
+    text.setAttribute("font-family", "Noto Sans JP, sans-serif");
+    text.textContent = side.text;
+    root.appendChild(text);
+    // 文字の幅は全角1文字＝文字の大きさとして見積もり、その分 viewBox を右へ広げる
+    maxX = Math.max(maxX, x + SIDE_TEXT_GAP + [...side.text].length * SIDE_FONT + 8);
+  }
+  root.setAttribute("viewBox", `${vx} ${vy} ${maxX - vx} ${vh}`);
   return new XMLSerializer().serializeToString(root);
 }
 
 // mermaid は大きいので、図解のスライドを描くときだけ読み込む
-async function renderOnce(code: string): Promise<{ svg: string; w: number; h: number }> {
+async function mermaidSvg(code: string): Promise<string> {
   const mermaid = (await import("mermaid")).default;
   mermaid.initialize({
     startOnLoad: false,
@@ -76,10 +136,22 @@ async function renderOnce(code: string): Promise<{ svg: string; w: number; h: nu
     htmlLabels: false,
     themeVariables: THEME_VARIABLES,
     themeCSS: THEME_CSS,
-    flowchart: { curve: "basis", nodeSpacing: 40, rankSpacing: 40, padding: 20 },
+    // 上下の箱の間は短めにする（矢印が長いと、枠に収めたとき箱が小さくなるため）
+    flowchart: { curve: "basis", nodeSpacing: 40, rankSpacing: 28, padding: 20 },
   });
-  const rendered = (await mermaid.render(`diagram-${++renderCount}`, code)).svg;
-  const svg = /^\s*(flowchart|graph)\s+(TD|TB)\b/.test(code) ? labelsBesideArrows(rendered) : rendered;
+  return (await mermaid.render(`diagram-${++renderCount}`, code)).svg;
+}
+
+async function renderOnce(code: string): Promise<{ svg: string; w: number; h: number }> {
+  let svg: string;
+  const { code: plain, count } = takeEdgeLabels(code);
+  if (/^\s*(flowchart|graph)\s+(TD|TB)\b/.test(code) && count > 0) {
+    // 文字ありで1度描いてどの矢印の文字かを読み、文字なしで描き直して右側にカギ形の矢印を足す
+    const sides = edgeEnds(await mermaidSvg(code));
+    svg = drawSideLabels(await mermaidSvg(plain), sides);
+  } else {
+    svg = await mermaidSvg(code);
+  }
   const [, , w, h] = (svg.match(/viewBox="([^"]+)"/)?.[1] ?? "0 0 1 1").split(/[\s,]+/).map(Number);
   return { svg, w, h };
 }
