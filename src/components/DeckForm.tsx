@@ -11,6 +11,7 @@ import { MAX_TEMPLATE_NAME, type Template } from "@/lib/slides/templates";
 import { saveTemplateAction } from "@/app/templates/actions";
 import { OriginalDropdown } from "@/components/OriginalDropdown";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { Modal } from "@/components/Modal";
 
 const inputClass =
   "w-full rounded-lg border border-[var(--border-strong)] bg-[var(--background)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]";
@@ -20,7 +21,7 @@ type TextInput = { id: number; text: string };
 type SectionInput = TextInput & { subs: TextInput[] };
 
 /**
- * タイトルと中項目（任意で小項目）を入れてリサーチを始めるフォーム。終わったら編集タブのその資料へ移る。
+ * タイトルと中項目（任意で小項目）を入れてリサーチを始めるフォーム。終わったらポップアップを出し、編集タブのその資料へ移る。
  * 中項目・小項目はテンプレートから埋めたり、今の内容をテンプレートとして保存したりできる
  */
 export function DeckForm({ templates }: { templates: Template[] }) {
@@ -34,6 +35,7 @@ export function DeckForm({ templates }: { templates: Template[] }) {
   const [loading, setLoading] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState("");
+  const [doneId, setDoneId] = useState<string | null>(null); // 作り終えて履歴に入った資料（ポップアップを出す）
 
   // テンプレート
   const [templateId, setTemplateId] = useState("");
@@ -161,7 +163,8 @@ export function DeckForm({ templates }: { templates: Template[] }) {
         await downloadPptx(data.deck);
         throw new Error(`${data.saveError} スライドはダウンロードしました。`);
       }
-      router.push(`/edit/${data.id}`);
+      setDoneId(data.id);
+      setLoading(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setLoading(false);
@@ -361,6 +364,30 @@ export function DeckForm({ templates }: { templates: Template[] }) {
         </p>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
+
+      {doneId && (
+        <Modal onClose={() => setDoneId(null)}>
+          <div className="flex flex-col gap-4 rounded-lg border border-[var(--border)] bg-[var(--background)] p-5 shadow-lg">
+            <p className="text-sm">スライド案ができました。履歴に保存しました。</p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDoneId(null)}
+                className="rounded-full border border-[var(--border)] px-4 py-1.5 text-sm transition-transform active:scale-95"
+              >
+                閉じる
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push(`/edit/${doneId}`)}
+                className="rounded-full bg-[var(--accent)] px-4 py-1.5 text-sm text-[var(--accent-foreground)] transition-transform active:scale-95"
+              >
+                編集画面へ
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

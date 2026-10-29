@@ -125,6 +125,7 @@ export const AI_LAYOUTS = [
   "bubbles",
   "code",
   "diagram",
+  "content-diagram",
 ] as const;
 type AiLayout = (typeof AI_LAYOUTS)[number];
 
@@ -192,6 +193,9 @@ export function normalizeSlide(raw: ComposedSlide, limits: SlideLimits): SlideBo
     case "diagram":
       if (diagram) return { layout: "diagram", bullets: bullets.slice(0, limits.maxCodeBullets), diagram };
       break;
+    case "content-diagram":
+      if (diagram) return { layout: "content-diagram", bullets, diagram };
+      break;
   }
   return { layout: "content", bullets: [...bullets, ...right].slice(0, maxBullets) };
 }
@@ -238,8 +242,9 @@ number はスライド番号です。全${topics.length}枚すべてについて
 置き方の選び方（内容に合うものを選ぶ。迷ったら content）
 - 後から手で直さなくて済むよう、次に当てはまるスライドは必ずその置き方にする
   - プログラミング・コマンド・設定ファイルなど、具体的な書き方を見せられる話題 → code
-  - 手順・流れ・仕組み・原因と結果・時系列の変化など、段階やつながりを図で見せられる話題 → diagram
-  - ただし code と diagram を合わせて全体の半分までにする
+  - 手順・流れ・仕組み・原因と結果・時系列の変化など、段階やつながりを図で見せられる話題 → diagram か content-diagram
+    （図の補足に要点を並べたいときは content-diagram）
+  - ただし code・diagram・content-diagram を合わせて全体の半分までにする
 - content: 見出し＋箇条書き1段。bullets に${limits.maxBullets}項目以内、1項目全角${limits.maxCharsPerBullet}文字以内
 - two-content: 2つのまとまりを左右2段で並べる。bullets（左）と right（右）にそれぞれ${limits.maxBullets}項目以内、
   1項目全角${limits.maxCharsPerColumnBullet}文字以内
@@ -252,10 +257,17 @@ number はスライド番号です。全${topics.length}枚すべてについて
   bubbles に[大きい吹き出し（全角${limits.maxBubbleLargeChars}文字以内）, 小さい吹き出し（全角${limits.maxBubbleSmallChars}文字以内）]の2つ
 - code: コード例を見せるスライド。bullets に${limits.maxCodeBullets}項目以内の短い説明（1項目全角${limits.maxCharsPerBullet}文字以内）、
   code にコード（${limits.maxCodeLines}行以内・1行半角${limits.maxCodeLineChars}文字以内。改行と字下げはそのまま。説明は // などのコメントで短く）
-- diagram: 流れ・手順・仕組み・関係を図で見せると分かりやすいもの。
-  bullets に${limits.maxCodeBullets}項目以内の短い説明（1項目全角${limits.maxCharsPerBullet}文字以内）、
-  diagram に Mermaid の flowchart の記法（1行目は "flowchart LR" か "flowchart TD"）。ノードは${limits.maxDiagramNodes}個以内、
-  ノードの文字は全角${limits.maxDiagramNodeChars}文字以内で A["文字"] のように必ず "" で囲む。矢印の文字は付けないか短く
+- diagram: 流れ・手順・仕組み・関係を図で見せると分かりやすいもの。図を横長に大きく見せる。
+  bullets に${limits.maxCodeBullets}項目以内の短い説明（1項目全角${limits.maxCharsPerBullet}文字以内）、diagram に図の記法
+- content-diagram: 左に要点の箇条書き、右に図。bullets に${limits.maxBullets}項目以内、1項目全角${limits.maxCharsPerColumnBullet}文字以内、
+  diagram に図の記法（右の枠は縦長に近いので、flowchart なら TD にする）
+- 図の記法（diagram と content-diagram の diagram）は Mermaid。内容に最も合う種類を次から選ぶ
+  - 手順・流れ・仕組み・原因と結果 → flowchart（1行目は "flowchart LR" か "flowchart TD"）。ノードは A["文字"] のように必ず "" で囲む。
+    矢印の文字は付けないか短く
+  - 年や時期ごとの出来事 → timeline（1行目は "timeline"、次の行から "    2017 : 出来事"）
+  - 1つのテーマから広がる要素・分類 → mindmap（1行目は "mindmap"、次の行に "  root((テーマ))"、要素は字下げで階層を表す）
+  - 人やシステムの間のやり取りの順番 → sequenceDiagram（1行目は "sequenceDiagram"、"    A->>B: 文字" の形）
+  - どの種類でも、要素は${limits.maxDiagramNodes}個以内、1つの要素の文字は全角${limits.maxDiagramNodeChars}文字以内
 - 選んだ置き方で使わない項目は空（"" や []）にする
 
 書き方

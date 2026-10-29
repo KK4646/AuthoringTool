@@ -2,10 +2,23 @@
 
 import { useState } from "react";
 import { downloadPptx } from "@/lib/slides/download";
-import type { TextBox } from "@/lib/slides/layout";
+import type { Layout } from "@/lib/slides/layout";
 import type { Deck } from "@/lib/slides/types";
 
-export function DownloadButton({ deck, diagramBox }: { deck: Deck; diagramBox?: TextBox }) {
+// beforeDownload は編集タブ用。保存が終わるのを待ち、保存できなかったら false を返してダウンロードを止める
+export function DownloadButton({
+  deck,
+  layout,
+  label = "pptxをダウンロード",
+  disabled = false,
+  beforeDownload,
+}: {
+  deck: Deck;
+  layout?: Layout;
+  label?: string;
+  disabled?: boolean;
+  beforeDownload?: () => Promise<boolean>;
+}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -13,7 +26,8 @@ export function DownloadButton({ deck, diagramBox }: { deck: Deck; diagramBox?: 
     setBusy(true);
     setError("");
     try {
-      await downloadPptx(deck, diagramBox);
+      if (beforeDownload && !(await beforeDownload())) return;
+      await downloadPptx(deck, layout);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -26,10 +40,10 @@ export function DownloadButton({ deck, diagramBox }: { deck: Deck; diagramBox?: 
       <button
         type="button"
         onClick={handleClick}
-        disabled={busy}
+        disabled={busy || disabled}
         className="w-fit rounded-full bg-[var(--accent)] px-5 py-2 text-sm text-[var(--accent-foreground)] transition-transform active:scale-95 disabled:opacity-50"
       >
-        {busy ? "作成中…" : "pptxをダウンロード"}
+        {busy ? "作成中…" : label}
       </button>
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>

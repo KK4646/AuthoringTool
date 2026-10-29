@@ -1,17 +1,17 @@
 import { createClient, getAuthUser } from "@/lib/supabase/server";
-import { DIAGRAM_BUCKET, diagramCodes, diagramPath } from "@/lib/slides/diagram";
+import { DIAGRAM_BUCKET, diagramItems, diagramKey, diagramPath } from "@/lib/slides/diagram";
+import { loadLayout } from "@/lib/slides/layout";
 import { buildPptx, type DiagramImages } from "@/lib/slides/pptx";
 import { DeckSchema, type Deck } from "@/lib/slides/types";
 
-// スライドにある図解の記法ごとに、保存済みの PNG を Storage から読む（詳細画面で一度描いた図だけある）
+// スライドにある図解ごとに、保存済みの PNG を Storage から読む（詳細画面やダウンロードの前に描いた図だけある）
 async function loadDiagramImages(userId: string, deck: Deck): Promise<DiagramImages> {
-  const codes = new Set(diagramCodes(deck));
   const supabase = await createClient();
   const images: DiagramImages = new Map();
   await Promise.all(
-    [...codes].map(async (code) => {
-      const { data } = await supabase.storage.from(DIAGRAM_BUCKET).download(await diagramPath(userId, code));
-      if (data) images.set(code, `image/png;base64,${Buffer.from(await data.arrayBuffer()).toString("base64")}`);
+    diagramItems(deck, loadLayout()).map(async ({ code, box }) => {
+      const { data } = await supabase.storage.from(DIAGRAM_BUCKET).download(await diagramPath(userId, code, box));
+      if (data) images.set(diagramKey(code, box), `image/png;base64,${Buffer.from(await data.arrayBuffer()).toString("base64")}`);
     }),
   );
   return images;

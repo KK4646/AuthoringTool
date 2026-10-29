@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import PptxGenJS from "pptxgenjs";
+import { diagramKey } from "@/lib/slides/diagram";
 import { splitRuns } from "@/lib/slides/emphasis";
 import { loadLayout, type TextBox } from "@/lib/slides/layout";
 import { renderDeck } from "@/lib/slides/render";
@@ -56,7 +57,7 @@ function listLines(lines: string[], bullet: boolean) {
   });
 }
 
-// 図解の記法 → 保存済みの PNG（pptxgenjs の data の形 "image/png;base64,…"）。無い図は記法の文字のまま入れる
+// 図解（diagram.ts の diagramKey）→ 保存済みの PNG（pptxgenjs の data の形 "image/png;base64,…"）。無い図は記法の文字のまま入れる
 export type DiagramImages = Map<string, string>;
 
 export async function buildPptx(deck: Deck, diagramImages: DiagramImages = new Map()): Promise<Buffer> {
@@ -70,7 +71,7 @@ export async function buildPptx(deck: Deck, diagramImages: DiagramImages = new M
     const slide = pptx.addSlide();
     setBackground(slide, r.background, r.backgroundColor);
     for (const item of r.items) {
-      const image = item.kind === "text" && item.key === "diagram" ? diagramImages.get(item.text) : undefined;
+      const image = item.kind === "text" && item.key === "diagram" ? diagramImages.get(diagramKey(item.text, item.box)) : undefined;
       if (image) slide.addImage({ data: image, x: item.box.x, y: item.box.y, w: item.box.w, h: item.box.h });
       else if (item.kind === "text") slide.addText(runs(item.text), boxOptions(item.box, font));
       else slide.addText(listLines(item.lines, item.bullet), boxOptions(item.box, font));

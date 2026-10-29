@@ -1,14 +1,14 @@
-import { diagramCodes } from "@/lib/slides/diagram";
-import type { TextBox } from "@/lib/slides/layout";
+import { diagramItems } from "@/lib/slides/diagram";
+import type { Layout } from "@/lib/slides/layout";
 import type { Deck } from "@/lib/slides/types";
 
 // サーバーで pptx を作ってもらい、ブラウザでダウンロードさせる。失敗したらエラーを投げる。
-// diagramBox（図解の枠）を渡すと、先に図解を PNG にして保存し終えてから作る（図が画像で入る）
-export async function downloadPptx(deck: Deck, diagramBox?: TextBox): Promise<void> {
-  const codes = diagramCodes(deck);
-  if (diagramBox && codes.length > 0) {
+// layout を渡すと、先に図解を PNG にして保存し終えてから作る（図が画像で入る）
+export async function downloadPptx(deck: Deck, layout?: Layout): Promise<void> {
+  const diagrams = layout ? diagramItems(deck, layout) : [];
+  if (diagrams.length > 0) {
     const { saveDiagrams } = await import("@/components/DiagramBox");
-    await saveDiagrams(codes, diagramBox);
+    await saveDiagrams(diagrams);
   }
   const res = await fetch("/api/pptx", {
     method: "POST",
@@ -104,6 +104,13 @@ export const SAMPLE_DECK: Deck = {
       layout: "diagram",
       bullets: ["図の短い説明"],
       diagram: 'flowchart LR\n  A["テーマを入力"] --> B["Webで調べる"] --> C["本文を作る"] --> D["pptxを作る"]',
+      sources: [],
+    },
+    {
+      heading: "箇条書き＋図解：見出し",
+      layout: "content-diagram",
+      bullets: ["左の段の1項目目", "左の段の2項目目。少し長めの文です", "左の段の3項目目"],
+      diagram: "timeline\n    2017 : 公開\n    2018 : 利用者が急増\n    2020 : 大型イベント",
       sources: [],
     },
     {

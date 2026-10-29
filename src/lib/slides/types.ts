@@ -17,6 +17,7 @@ export const SLIDE_LAYOUTS = [
   "bubbles",
   "code",
   "diagram",
+  "content-diagram",
 ] as const;
 export type SlideLayout = (typeof SLIDE_LAYOUTS)[number];
 
@@ -31,6 +32,7 @@ export const SLIDE_LAYOUT_LABELS: Record<SlideLayout, string> = {
   bubbles: "吹き出しコンテンツ",
   code: "コード",
   diagram: "図解",
+  "content-diagram": "箇条書き＋図解",
 };
 
 // 本文スライド1枚分の項目。layout が無ければ「1つのコンテンツ」（それより前の履歴には無い）。

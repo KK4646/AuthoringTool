@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties } from "react";
-import { DIAGRAM_BUCKET, DIAGRAM_PX_PER_INCH, diagramPath } from "@/lib/slides/diagram";
+import { DIAGRAM_BUCKET, DIAGRAM_PX_PER_INCH, diagramKey, diagramPath } from "@/lib/slides/diagram";
 import type { TextBox } from "@/lib/slides/layout";
 import { createClient } from "@/lib/supabase/client";
 
-// 同じ画面で同じ図を何度も保存しに行かないよう、記法ごとの保存の処理を覚えておく
+// 同じ画面で同じ図を何度も保存しに行かないよう、図ごと（diagramKey）の保存の処理を覚えておく
 // （ダウンロードの前に、保存が終わるのを待つためにも使う）
 const saving = new Map<string, Promise<void>>();
 let renderCount = 0;
@@ -52,12 +52,13 @@ async function svgToPng(svg: string, box: TextBox): Promise<Blob> {
 
 // 描いた図を PNG にして Storage に保存する。同じ記法の画像がもうあれば、何もしない（409 は無視）
 function savePng(code: string, svg: string, box: TextBox): Promise<void> {
-  const running = saving.get(code);
+  const key = diagramKey(code, box);
+  const running = saving.get(key);
   if (running) return running;
   const task = uploadPng(code, svg, box).catch(() => {
-    saving.delete(code); // 失敗したら次に描いたときにやり直す
+    saving.delete(key); // 失敗したら次に描いたときにやり直す
   });
-  saving.set(code, task);
+  saving.set(key, task);
   return task;
 }
 
@@ -65,7 +66,7 @@ async function uploadPng(code: string, svg: string, box: TextBox) {
   const supabase = createClient();
   const { data } = await supabase.auth.getUser();
   if (!data.user) return;
-  const path = await diagramPath(data.user.id, code);
+  const path = await diagramPath(data.user.id, code, box);
   const png = await svgToPng(svg, box);
   await supabase.storage.from(DIAGRAM_BUCKET).upload(path, png, { contentType: "image/png", upsert: false });
 }
@@ -75,10 +76,10 @@ async function uploadPng(code: string, svg: string, box: TextBox) {
  * （詳細画面を開いてすぐダウンロードしたときも、図が画像として入るようにするため）。
  * 記法が書き間違っていて描けない図は飛ばす（pptx には記法の文字が入る）
  */
-export async function saveDiagrams(codes: string[], box: TextBox): Promise<void> {
+export async function saveDiagrams(diagrams: { code: string; box: TextBox }[]): Promise<void> {
   await Promise.all(
-    [...new Set(codes)].map(async (code) => {
-      const running = saving.get(code);
+    diagrams.map(async ({ code, box }) => {
+      const running = saving.get(diagramKey(code, box));
       if (running) return running;
       try {
         await savePng(code, await renderSvg(code), box);

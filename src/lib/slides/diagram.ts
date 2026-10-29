@@ -1,3 +1,5 @@
+import type { Layout, TextBox } from "@/lib/slides/layout";
+import { renderDeck } from "@/lib/slides/render";
 import type { Deck } from "@/lib/slides/types";
 
 // 図解の置き方（Mermaid の記法から描く図）の画像の置き場所。ブラウザ（描いて保存）とサーバー（pptx に貼る）の両方で使う
@@ -8,21 +10,27 @@ export const DIAGRAM_BUCKET = "slideapp-diagrams";
 // 画像は枠と同じ縦横比で、1インチあたりこの画素数で作る（pptx に貼っても粗く見えない大きさ）
 export const DIAGRAM_PX_PER_INCH = 200;
 
-// 記法の SHA-256（16進）。記法が同じなら同じ名前になるので、同じ図を二重に保存しない
-export async function diagramHash(code: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(code.trim()));
+// 図1枚を見分ける文字列。画像は枠の縦横比で作るので、同じ記法でも枠の大きさが違えば別の画像にする
+export function diagramKey(code: string, box: TextBox): string {
+  return `${box.w}x${box.h}\n${code.trim()}`;
+}
+
+// diagramKey の SHA-256（16進）。同じ図なら同じ名前になるので、二重に保存しない
+export async function diagramHash(key: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key));
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 // バケットの中のキー。先頭のフォルダを user_id にする（ポリシーがここで本人に絞る）
-export async function diagramPath(userId: string, code: string): Promise<string> {
-  return `${userId}/${await diagramHash(code)}.png`;
+export async function diagramPath(userId: string, code: string, box: TextBox): Promise<string> {
+  return `${userId}/${await diagramHash(diagramKey(code, box))}.png`;
 }
 
-// スライドにある図解の記法の一覧
-export function diagramCodes(deck: Deck): string[] {
-  return deck.sections
-    .flatMap((s) => [s, ...(s.subsections ?? [])])
-    .filter((s) => s.layout === "diagram" && s.diagram)
-    .map((s) => s.diagram!);
+// スライドにある図解の一覧（記法と、描く枠）。置き方ごとに枠が違うので renderDeck から拾う
+export function diagramItems(deck: Deck, layout: Layout): { code: string; box: TextBox }[] {
+  return renderDeck(deck, layout).flatMap((slide) =>
+    slide.items.flatMap((item) =>
+      item.key === "diagram" && item.kind === "text" && item.text ? [{ code: item.text, box: item.box }] : [],
+    ),
+  );
 }

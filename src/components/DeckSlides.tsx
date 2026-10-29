@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { updateDeckSectionsAction } from "@/app/decks/actions";
 import { DownloadButton } from "@/components/DownloadButton";
 import { OriginalDropdown } from "@/components/OriginalDropdown";
@@ -34,6 +34,8 @@ export function DeckSlides({
   const [error, setError] = useState("");
   // 編集中の本文スライド（"i" または "i-j"）
   const [editing, setEditing] = useState<string | null>(null);
+  // 最後に始めた保存。「保存してダウンロード」はこれが終わるのを待ってから pptx を作る
+  const lastSave = useRef<Promise<boolean>>(Promise.resolve(true));
 
   const slides = renderDeck(deck, layout);
 
@@ -50,10 +52,13 @@ export function DeckSlides({
     setDeck({ ...deck, sections });
     setSaving(true);
     setError("");
-    const result = await updateDeckSectionsAction(id, sections);
-    setSaving(false);
-    // 保存に失敗しても、画面の内容でダウンロードはできる
-    if (result.error) setError(`${result.error} ダウンロードは変更後の内容で作れます。`);
+    const save = updateDeckSectionsAction(id, sections).then((result) => {
+      setSaving(false);
+      if (result.error) setError(`${result.error} もう一度変えてから保存してください。`);
+      return !result.error;
+    });
+    lastSave.current = save;
+    await save;
   }
 
   const slideOf = ({ i, j }: NonNullable<RenderedSlide["source"]>): Subsection =>
@@ -63,7 +68,23 @@ export function DeckSlides({
   return (
     <>
       <div className="flex flex-col gap-1">
-        <DownloadButton deck={deck} diagramBox={layout.layouts.diagram.diagram} />
+        {readOnly ? (
+          <DownloadButton deck={deck} layout={layout} />
+        ) : (
+          <>
+            {/* 置き方・文字の変更はその場で保存しているので、ここでは保存が終わるのを待ってから作る */}
+            <DownloadButton
+              deck={deck}
+              layout={layout}
+              label="保存してダウンロード"
+              disabled={editing !== null}
+              beforeDownload={() => lastSave.current}
+            />
+            {editing !== null && (
+              <p className="text-xs text-[var(--muted)]">編集中のスライドを「保存」してから押してください。</p>
+            )}
+          </>
+        )}
         {saving && <p className="text-xs text-[var(--muted)]">保存中…</p>}
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>

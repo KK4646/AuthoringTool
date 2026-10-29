@@ -129,6 +129,14 @@ describe("normalizeSlide（図解）", () => {
     expect(normalizeSlide(raw, limits)).toEqual({ layout: "diagram", bullets: ["a", "b"], diagram: "flowchart LR\n  A --> B" });
   });
 
+  it("箇条書き＋図解は箇条書きを1段の上限まで残す", () => {
+    expect(normalizeSlide({ ...raw, layout: "content-diagram" }, limits)).toEqual({
+      layout: "content-diagram",
+      bullets: ["a", "b", "c"],
+      diagram: "flowchart LR\n  A --> B",
+    });
+  });
+
   it("記法が空なら1つのコンテンツにする", () => {
     expect(normalizeSlide({ ...raw, diagram: " " }, limits)).toEqual({ layout: "content", bullets: ["a", "b", "c"] });
   });
