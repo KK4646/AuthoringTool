@@ -39,7 +39,12 @@ const THEME_VARIABLES = {
 };
 
 // 矢印の上の文字は明るい色にし、下地は背景と同じ色で塗る（文字の部分だけ矢印の線が消えて見える）
+// 矢印は太く、パステルの青で丸みを付ける（細い灰色の線だと質素に見えるため。2026-10-29 ユーザーの指示）
+const ARROW_COLOR = "#A9C4EE";
 const THEME_CSS = `
+  .flowchart-link, .messageLine0, .messageLine1 { stroke: ${ARROW_COLOR} !important; stroke-width: 3.5px !important; stroke-linecap: round; }
+  .marker, marker path, .arrowheadPath { fill: ${ARROW_COLOR} !important; stroke: ${ARROW_COLOR} !important; }
+  .node rect, .node polygon, .node circle, .actor { rx: 10px; ry: 10px; stroke-width: 2px !important; }
   .edgeLabel text, .edgeLabel tspan, .edgeLabel .label text { fill: #F5F7FB !important; }
   .edgeLabel rect, .labelBkg { fill: ${SLIDE_BG} !important; opacity: 1 !important; }
 `;
@@ -74,6 +79,25 @@ function edgeEnds(svg: string): SideLabel[] {
   });
 }
 
+// 全部の矢印がどの箱からどの箱へか（"L_A_B_0" の形の id）
+function allEdges(svg: string): { from: string; to: string }[] {
+  const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
+  return [...doc.querySelectorAll("path.flowchart-link")].flatMap((p) => {
+    const m = (p.getAttribute("data-id") ?? p.id).match(/^L_(.+)_(.+)_\d+$/);
+    return m ? [{ from: m[1], to: m[2] }] : [];
+  });
+}
+
+// 一本道（どの箱からも出る矢印・入る矢印が1本まで）か。分かれ道や戻る矢印のある図では、カギ形にすると
+// 線が入り組むので、文字は矢印の上のままにする
+function isChain(edges: { from: string; to: string }[]): boolean {
+  const from = new Set(edges.map((e) => e.from));
+  const to = new Set(edges.map((e) => e.to));
+  // 最初から最後へ戻る矢印があると、矢印の入らない箱（始まり）が無くなる
+  const hasStart = [...from].some((id) => !to.has(id));
+  return from.size === edges.length && to.size === edges.length && hasStart;
+}
+
 function nodeBox(doc: Document, id: string) {
   const node = [...doc.querySelectorAll("g.node")].find(
     (g) => g.getAttribute("data-id") === id || new RegExp(`-${id}-\\d+$`).test(g.id),
@@ -94,7 +118,7 @@ function drawSideLabels(svg: string, sides: SideLabel[]): string {
   const [vx, vy, vw, vh] = (root.getAttribute("viewBox") ?? "0 0 1 1").split(/[\s,]+/).map(Number);
   // 矢印の先の三角
   const defs = doc.createElementNS(SVG_NS, "defs");
-  defs.innerHTML = `<marker id="side-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#DDE3F0"/></marker>`;
+  defs.innerHTML = `<marker id="side-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${ARROW_COLOR}"/></marker>`;
   root.appendChild(defs);
   let maxX = vx + vw;
   for (const side of sides) {
@@ -106,8 +130,10 @@ function drawSideLabels(svg: string, sides: SideLabel[]): string {
     // 出る位置は箱の中央より少し下、入る位置は少し上にずらす（続けて並ぶカギ形の線がつながって見えないように）
     path.setAttribute("d", `M${a.right + 4},${a.cy + SIDE_SHIFT} H${x} V${b.cy - SIDE_SHIFT} H${b.right + 4}`);
     path.setAttribute("fill", "none");
-    path.setAttribute("stroke", "#DDE3F0");
-    path.setAttribute("stroke-width", "2");
+    path.setAttribute("stroke", ARROW_COLOR);
+    path.setAttribute("stroke-width", "3.5");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
     path.setAttribute("marker-end", "url(#side-arrow)");
     root.appendChild(path);
     const text = doc.createElementNS(SVG_NS, "text");
@@ -118,9 +144,18 @@ function drawSideLabels(svg: string, sides: SideLabel[]): string {
     text.setAttribute("font-size", String(SIDE_FONT));
     text.setAttribute("font-family", "Noto Sans JP, sans-serif");
     text.textContent = side.text;
+    // 文字の幅は全角1文字＝文字の大きさとして見積もる。文字の下に丸い札を敷いて目立たせる
+    const textW = [...side.text].length * SIDE_FONT;
+    const pill = doc.createElementNS(SVG_NS, "rect");
+    pill.setAttribute("x", String(x + SIDE_TEXT_GAP - 10));
+    pill.setAttribute("y", String((a.cy + b.cy) / 2 - SIDE_FONT * 0.85));
+    pill.setAttribute("width", String(textW + 20));
+    pill.setAttribute("height", String(SIDE_FONT * 1.7));
+    pill.setAttribute("rx", String(SIDE_FONT * 0.85));
+    pill.setAttribute("fill", "rgba(169, 196, 238, 0.22)");
+    root.appendChild(pill);
     root.appendChild(text);
-    // 文字の幅は全角1文字＝文字の大きさとして見積もり、その分 viewBox を右へ広げる
-    maxX = Math.max(maxX, x + SIDE_TEXT_GAP + [...side.text].length * SIDE_FONT + 8);
+    maxX = Math.max(maxX, x + SIDE_TEXT_GAP + textW + 16);
   }
   root.setAttribute("viewBox", `${vx} ${vy} ${maxX - vx} ${vh}`);
   return new XMLSerializer().serializeToString(root);
@@ -137,7 +172,7 @@ async function mermaidSvg(code: string): Promise<string> {
     themeVariables: THEME_VARIABLES,
     themeCSS: THEME_CSS,
     // 上下の箱の間は短めにする（矢印が長いと、枠に収めたとき箱が小さくなるため）
-    flowchart: { curve: "basis", nodeSpacing: 40, rankSpacing: 28, padding: 20 },
+    flowchart: { curve: "basis", nodeSpacing: 40, rankSpacing: 28, padding: 20, wrappingWidth: 320 },
   });
   return (await mermaid.render(`diagram-${++renderCount}`, code)).svg;
 }
@@ -146,9 +181,9 @@ async function renderOnce(code: string): Promise<{ svg: string; w: number; h: nu
   let svg: string;
   const { code: plain, count } = takeEdgeLabels(code);
   if (/^\s*(flowchart|graph)\s+(TD|TB)\b/.test(code) && count > 0) {
-    // 文字ありで1度描いてどの矢印の文字かを読み、文字なしで描き直して右側にカギ形の矢印を足す
-    const sides = edgeEnds(await mermaidSvg(code));
-    svg = drawSideLabels(await mermaidSvg(plain), sides);
+    // 文字ありで1度描いてどの矢印の文字かを読み、一本道なら文字なしで描き直して右側にカギ形の矢印を足す
+    const labeled = await mermaidSvg(code);
+    svg = isChain(allEdges(labeled)) ? drawSideLabels(await mermaidSvg(plain), edgeEnds(labeled)) : labeled;
   } else {
     svg = await mermaidSvg(code);
   }
