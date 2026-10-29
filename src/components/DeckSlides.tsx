@@ -14,10 +14,21 @@ import { SLIDE_LAYOUT_LABELS, SLIDE_LAYOUTS, type Deck, type SlideLayout, type S
 const LAYOUT_OPTIONS = SLIDE_LAYOUTS.map((value) => ({ value, label: SLIDE_LAYOUT_LABELS[value] }));
 
 /**
- * 履歴の詳細画面。スライドを1枚ずつプレビューで並べ、本文スライドは置き方を変えられ（変えたらすぐ保存）、
- * 「編集」でプレビューの中の文字を直して色を付けられる（保存ボタンで保存）。ダウンロードは変えた後の内容で作る。
+ * スライドを1枚ずつプレビューで並べる（編集タブと履歴の詳細で使う）。編集タブでは本文スライドの置き方を変えられ
+ * （変えたらすぐ保存）、「編集」でプレビューの中の文字を直して色を付けられる（保存ボタンで保存）。
+ * readOnly（履歴）では見るだけ。ダウンロードはどちらでも、変えた後の内容で作る。
  */
-export function DeckSlides({ id, initialDeck, layout }: { id: string; initialDeck: Deck; layout: Layout }) {
+export function DeckSlides({
+  id,
+  initialDeck,
+  layout,
+  readOnly = false,
+}: {
+  id: string;
+  initialDeck: Deck;
+  layout: Layout;
+  readOnly?: boolean;
+}) {
   const [deck, setDeck] = useState(initialDeck);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -66,7 +77,7 @@ export function DeckSlides({ id, initialDeck, layout }: { id: string; initialDec
             <li key={index} className="flex flex-col gap-2">
               <div className="flex items-center gap-2 text-xs text-[var(--muted)]">
                 <span className="w-6 shrink-0">{index + 1}</span>
-                {src && content && !isEditing && (
+                {!readOnly && src && content && !isEditing && (
                   <>
                     <div className="w-full max-w-xs">
                       <OriginalDropdown

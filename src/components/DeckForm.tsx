@@ -20,7 +20,7 @@ type TextInput = { id: number; text: string };
 type SectionInput = TextInput & { subs: TextInput[] };
 
 /**
- * タイトルと中項目（任意で小項目）を入れてリサーチを始めるフォーム。終わったら履歴の詳細へ移る。
+ * タイトルと中項目（任意で小項目）を入れてリサーチを始めるフォーム。終わったら編集タブのその資料へ移る。
  * 中項目・小項目はテンプレートから埋めたり、今の内容をテンプレートとして保存したりできる
  */
 export function DeckForm({ templates }: { templates: Template[] }) {
@@ -161,7 +161,7 @@ export function DeckForm({ templates }: { templates: Template[] }) {
         await downloadPptx(data.deck);
         throw new Error(`${data.saveError} スライドはダウンロードしました。`);
       }
-      router.push(`/decks/${data.id}`);
+      router.push(`/edit/${data.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setLoading(false);

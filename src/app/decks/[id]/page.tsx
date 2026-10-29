@@ -1,31 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
 import { DeckSlides } from "@/components/DeckSlides";
 import { SourceList } from "@/components/SourceList";
 import { jstDateString } from "@/lib/date";
+import { getDeck } from "@/lib/slides/decks";
 import { loadLayout } from "@/lib/slides/layout";
-import { allSources, parseSections, parseSources, type Deck } from "@/lib/slides/types";
+import { allSources } from "@/lib/slides/types";
 
+// 履歴の詳細。見るだけ（プレビューとダウンロード）。直すときは編集タブで開く
 export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
   const { id } = await params;
   await requireUser(`/decks/${id}`);
-  const supabase = await createClient();
-
-  const { data: row } = await supabase
-    .from("decks")
-    .select("title, subtitle, sections, sources, created_at")
-    .eq("id", id)
-    .maybeSingle();
-  if (!row) notFound();
-
-  const deck: Deck = {
-    title: row.title,
-    subtitle: row.subtitle,
-    sections: parseSections(row.sections),
-    sources: parseSources(row.sources),
-  };
+  const found = await getDeck(id);
+  if (!found) notFound();
+  const { deck, createdAt } = found;
   const sources = allSources(deck);
 
   return (
@@ -39,10 +28,16 @@ export default async function DeckPage({ params }: PageProps<"/decks/[id]">) {
       <header className="flex flex-col gap-1">
         <h1 className="text-xl font-bold">{deck.title}</h1>
         {deck.subtitle && <p className="text-sm">{deck.subtitle}</p>}
-        <p className="text-xs text-[var(--muted)]">{jstDateString(row.created_at)} 作成</p>
+        <p className="text-xs text-[var(--muted)]">{jstDateString(createdAt)} 作成</p>
       </header>
+      <Link
+        href={`/edit/${id}`}
+        className="w-fit rounded-full border border-[var(--accent)] px-4 py-1.5 text-sm text-[var(--accent)] transition-transform active:scale-95"
+      >
+        編集タブで開く
+      </Link>
 
-      <DeckSlides id={id} initialDeck={deck} layout={loadLayout()} />
+      <DeckSlides id={id} initialDeck={deck} layout={loadLayout()} readOnly />
 
       {sources.length > 0 && <SourceList sources={sources} />}
     </main>

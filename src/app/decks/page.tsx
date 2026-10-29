@@ -1,24 +1,10 @@
 import { requireUser } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
 import { DeckList } from "@/components/DeckList";
-import { jstDateString, jstTimeString } from "@/lib/date";
-import { parseSections } from "@/lib/slides/types";
+import { listDeckSummaries } from "@/lib/slides/decks";
 
 export default async function DecksPage() {
   await requireUser("/decks");
-  const supabase = await createClient();
-
-  const { data } = await supabase
-    .from("decks")
-    .select("id, title, sections, created_at")
-    .order("created_at", { ascending: false });
-
-  const decks = (data ?? []).map((d) => ({
-    id: d.id,
-    title: d.title,
-    sectionCount: parseSections(d.sections).length,
-    createdLabel: `${jstDateString(d.created_at)} ${jstTimeString(d.created_at)}`,
-  }));
+  const decks = await listDeckSummaries();
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-6">

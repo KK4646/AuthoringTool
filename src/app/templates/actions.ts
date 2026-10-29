@@ -30,7 +30,6 @@ export async function saveTemplateAction(
   if (error) return { error: "テンプレートの保存に失敗しました。" };
 
   revalidatePath("/");
-  revalidatePath("/settings");
   return {};
 }
 
@@ -42,5 +41,4 @@ export async function deleteTemplateAction(id: string) {
   if (error) throw new Error("テンプレートの削除に失敗しました");
 
   revalidatePath("/");
-  revalidatePath("/settings");
 }

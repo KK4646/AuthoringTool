@@ -32,5 +32,6 @@ export async function updateDeckSectionsAction(
   const { error } = await supabase.from("decks").update({ sections: parsed.data }).eq("id", id);
   if (error) return { error: "置き方の保存に失敗しました。" };
   revalidatePath(`/decks/${id}`);
+  revalidatePath(`/edit/${id}`);
   return {};
 }

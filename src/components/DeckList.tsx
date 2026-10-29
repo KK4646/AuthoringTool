@@ -4,14 +4,24 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { deleteDeckAction } from "@/app/decks/actions";
+import type { DeckSummary } from "@/lib/slides/decks";
 
-type DeckSummary = { id: string; title: string; sectionCount: number; createdLabel: string };
 
 /**
  * 履歴の一覧。普段は開くだけで、上の「編集」を押したときだけ各行に削除が出る
  * （誤タップで消さないため。共通ルール「削除など取り消せない操作は編集の奥に置く」）
  */
-export function DeckList({ decks }: { decks: DeckSummary[] }) {
+export function DeckList({
+  decks,
+  hrefBase = "/decks",
+  openLabel = "開く",
+  deletable = true,
+}: {
+  decks: DeckSummary[];
+  hrefBase?: string; // 「開く」の行き先（履歴は /decks、編集タブは /edit）
+  openLabel?: string;
+  deletable?: boolean; // 削除は履歴でだけ出す
+}) {
   const [editing, setEditing] = useState(false);
   const [target, setTarget] = useState<DeckSummary | null>(null);
   const [error, setError] = useState("");
@@ -33,13 +43,15 @@ export function DeckList({ decks }: { decks: DeckSummary[] }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <button
-        type="button"
-        onClick={() => setEditing((v) => !v)}
-        className="w-fit self-end rounded-lg border border-[var(--border)] px-3 py-1 text-xs transition-transform hover:border-[var(--accent)] active:scale-95"
-      >
-        {editing ? "完了" : "編集"}
-      </button>
+      {deletable && (
+        <button
+          type="button"
+          onClick={() => setEditing((v) => !v)}
+          className="w-fit self-end rounded-lg border border-[var(--border)] px-3 py-1 text-xs transition-transform hover:border-[var(--accent)] active:scale-95"
+        >
+          {editing ? "完了" : "編集"}
+        </button>
+      )}
 
       <ul className="flex flex-col gap-2">
         {decks.map((d) => (
@@ -55,10 +67,10 @@ export function DeckList({ decks }: { decks: DeckSummary[] }) {
             </div>
             {/* 文字を押して開く形にはしない（画面移動はボタンで行う。2026-10-22 ユーザーの指示） */}
             <Link
-              href={`/decks/${d.id}`}
+              href={`${hrefBase}/${d.id}`}
               className="shrink-0 rounded-lg border border-[var(--border)] px-3 py-1 text-xs transition-transform hover:border-[var(--accent)] active:scale-95"
             >
-              開く
+              {openLabel}
             </Link>
             {editing && (
               <button

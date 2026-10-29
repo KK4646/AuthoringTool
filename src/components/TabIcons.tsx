@@ -37,12 +37,12 @@ export function HistoryIcon(props: IconProps) {
   );
 }
 
-/** 設定タブ：歯車 */
-export function GearIcon(props: IconProps) {
+/** 編集タブ：鉛筆 */
+export function EditIcon(props: IconProps) {
   return (
     <Svg {...props}>
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1" />
+      <path d="M4 20h4L19 9l-4-4L4 16v4z" />
+      <path d="M13.5 6.5l4 4" />
     </Svg>
   );
 }
