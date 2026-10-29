@@ -168,6 +168,35 @@ function drawSideLabels(svg: string, sides: SideLabel[]): string {
   return new XMLSerializer().serializeToString(root);
 }
 
+// 箱の中の文字を、箱のまん中にそろえ直す（mermaid は太字にする前の幅・高さで位置を決めるので、少しずれるため）。
+// 文字の塊を箱の中心に置き、行ごとに左右中央・上下は全行の真ん中が中心に来るように並べる
+function centerNodeLabels(svg: string): string {
+  const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
+  doc.querySelectorAll("g.node").forEach((node) => {
+    const label = node.querySelector(":scope > g.label");
+    const text = label?.querySelector("text");
+    if (!label || !text) return;
+    // 箱の形が rect ならその中心、それ以外（ひし形・円柱など）は node の原点を中心とみなす
+    const rect = node.querySelector(":scope > rect.label-container");
+    const cx = rect ? Number(rect.getAttribute("x")) + Number(rect.getAttribute("width")) / 2 : 0;
+    const cy = rect ? Number(rect.getAttribute("y")) + Number(rect.getAttribute("height")) / 2 : 0;
+    label.setAttribute("transform", `translate(${cx}, ${cy})`);
+    text.setAttribute("x", "0");
+    text.setAttribute("y", "0");
+    text.setAttribute("text-anchor", "middle");
+    text.setAttribute("dominant-baseline", "central");
+    const rows = [...text.querySelectorAll(":scope > tspan.row")];
+    rows.forEach((row, i) => {
+      row.setAttribute("x", "0");
+      row.setAttribute("text-anchor", "middle");
+      row.removeAttribute("y");
+      // 1行目は全体の高さの半分だけ上へ、2行目からは1行ずつ下へ
+      row.setAttribute("dy", i === 0 ? `${-(rows.length - 1) * 0.55}em` : "1.1em");
+    });
+  });
+  return new XMLSerializer().serializeToString(doc.documentElement);
+}
+
 // mermaid は大きいので、図解のスライドを描くときだけ読み込む
 async function mermaidSvg(code: string): Promise<string> {
   const mermaid = (await import("mermaid")).default;
@@ -181,7 +210,8 @@ async function mermaidSvg(code: string): Promise<string> {
     // 上下の箱の間は短めにする（矢印が長いと、枠に収めたとき箱が小さくなるため）
     flowchart: { curve: "basis", nodeSpacing: 40, rankSpacing: 28, padding: 20, wrappingWidth: 320 },
   });
-  return (await mermaid.render(`diagram-${++renderCount}`, code)).svg;
+  const svg = (await mermaid.render(`diagram-${++renderCount}`, code)).svg;
+  return /^\s*(flowchart|graph)\b/.test(code) ? centerNodeLabels(svg) : svg;
 }
 
 async function renderOnce(code: string): Promise<{ svg: string; w: number; h: number }> {
