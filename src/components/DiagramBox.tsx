@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties } from "react";
-import { DIAGRAM_BUCKET, DIAGRAM_PX_PER_INCH, diagramKey, diagramPath } from "@/lib/slides/diagram";
+import { DIAGRAM_BUCKET, DIAGRAM_PX_PER_INCH, diagramKey, diagramPath, quoteEdgeLabels } from "@/lib/slides/diagram";
 import type { TextBox } from "@/lib/slides/layout";
 import { createClient } from "@/lib/supabase/client";
 
@@ -226,7 +226,8 @@ async function mermaidSvg(code: string): Promise<string> {
   return /^\s*(flowchart|graph)\b/.test(code) ? centerNodeLabels(svg) : svg;
 }
 
-async function renderOnce(code: string): Promise<{ svg: string; w: number; h: number }> {
+async function renderOnce(source: string): Promise<{ svg: string; w: number; h: number }> {
+  const code = quoteEdgeLabels(source);
   let svg: string;
   const { code: plain, count } = takeEdgeLabels(code);
   if (/^\s*(flowchart|graph)\s+(TD|TB)\b/.test(code) && count > 0) {

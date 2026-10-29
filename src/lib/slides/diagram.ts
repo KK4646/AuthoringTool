@@ -37,3 +37,8 @@ export function diagramItems(deck: Deck, layout: Layout): { code: string; box: T
     ),
   );
 }
+
+// 矢印の文字を "" で囲む（A -->|int()| B のように記号が入ると記法の間違いになり、図が描けないため）
+export function quoteEdgeLabels(code: string): string {
+  return code.replace(/\|([^|"]+)\|/g, (_all, text: string) => `|"${text.trim().replace(/"/g, "'")}"|`);
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SAMPLE_DECK } from "@/lib/slides/download";
-import { diagramItems, diagramPath } from "@/lib/slides/diagram";
+import { diagramItems, diagramPath, quoteEdgeLabels } from "@/lib/slides/diagram";
 import { loadLayout } from "@/lib/slides/layout";
 import type { TextBox } from "@/lib/slides/layout";
 
@@ -22,5 +22,11 @@ describe("diagramItems", () => {
     const items = diagramItems(SAMPLE_DECK, layout);
     expect(items.length).toBeGreaterThan(0);
     for (const item of items) expect(item.code).not.toBe("");
+  });
+});
+
+describe("quoteEdgeLabels", () => {
+  it("矢印の文字を \"\" で囲み、囲んであるものはそのままにする", () => {
+    expect(quoteEdgeLabels('A -->|int()| B -->|"str()"| C')).toBe('A -->|"int()"| B -->|"str()"| C');
   });
 });
