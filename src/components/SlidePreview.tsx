@@ -137,14 +137,16 @@ function Box({ item, editing }: { item: SlideItem; editing: boolean }) {
     );
   }
   // 箇条書き。1項目を1つの div にし、点は疑似要素で描く（編集で読み戻すとき文字に混ざらないように）
-  const lines = editing && item.lines.length === 0 ? [""] : item.lines;
+  // 中身が空の枠は、書き込めるよう空の1行を置く。点は付けない（箇条書きがあるように見えて紛らわしいため）
+  const placeholder = editing && item.lines.length === 0;
+  const lines = placeholder ? [""] : item.lines;
   return (
     <div style={boxStyle(item.box)}>
       <div {...editable} style={{ minHeight: "1em" }}>
         {lines.map((line, i) => (
           <div
             key={i}
-            className={item.bullet ? "relative pl-[1.1em] before:absolute before:left-[0.2em] before:content-['•']" : ""}
+            className={item.bullet && !placeholder ? "relative pl-[1.1em] before:absolute before:left-[0.2em] before:content-['•']" : ""}
             style={{ marginBottom: fontSize(item.bullet ? 8 : 4), whiteSpace: "pre-wrap" }}
           >
             <Runs text={line} />
